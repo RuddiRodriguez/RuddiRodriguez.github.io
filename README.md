@@ -19,3 +19,7 @@ The source validator can select a cutoff using evaluation labels when no cutoff 
 ## Tabular Classifier Flow portfolio entry
 
 The second project entry summarizes `tabular_classifier_flow/README.md`: reusable configuration, CSV train/test preparation, model comparison, candidate refinement, Optuna tuning, saved pipelines, validation outputs, optional permutation importance, and the Streamlit dashboard. It does not claim a newly run model or a live dashboard. The original validation entry remains available at `#projects`.
+
+## Separate project parts
+
+The data-preparation entry at `#data-preparation` describes verified generation, CSV loading, random stratified splitting, and default numeric scaling/categorical encoding. Campaign synthetic data uses `Responsflag`; settings must match that outcome. Current split settings use a 20% test share. Random row splitting is not a customer-group or chronological split. Entries are parts of the same project, not separate claimed implementations.
