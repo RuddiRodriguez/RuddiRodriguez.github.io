@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>SQL feature engineering for campaign response modelling · Ruddi Garcia</title><meta name="description" content="Anonymous examples of contact-history windows, customer/account joins, date-based features, labels, and production handoff."><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=7"></head>
+<body><a class="skip" href="#main">Skip to content</a><header class="wrap"><a class="brand" href="index.html">RG<span>Ruddi Garcia</span></a><nav aria-label="Main navigation"><a href="index.html">Projects</a><a href="https://github.com/RuddiRodriguez">GitHub ↗</a></nav></header>
+<main id="main"><div class="wrap page-back"><a href="index.html">← All project entries</a></div><article class="wrap blog-article"><div class="article-header"><p class="eyebrow">PART 05 / ANONYMISED SQL CASE STUDY</p><h1>SQL feature engineering for campaign response modelling</h1><p class="article-lead">How I assembled historical campaign contacts, account context, and response labels for the original banking model—without exposing the bank’s internal names.</p><p class="article-byline">By Ruddi Garcia · Tabular Classifier Flow · Python</p></div><nav class="part-links" aria-label="Articles in this project"><span>Campaign response modelling · Article series</span><a href="banking-project.html">Introduction · Banking problem</a><a href="data-preparation.html">01 · Data preparation</a><a href="workflow.html">02 · Model development</a><a href="validation.html">03 · Validation</a><a href="methodology.html">04 · Methodology</a><a href="sql-feature-engineering.html" aria-current="page">05 · SQL feature engineering</a></nav><div class="article-layout"><nav class="article-toc" aria-label="In this article"><span>IN THIS ARTICLE</span><a href="#problem">The problem: reconstruct the context of a contact</a><a href="#contacts">1. Derive recency and prior-contact counts</a><a href="#accounts">2. Join contact and account context</a><a href="#customers">3. Attach customer features and response labels</a><a href="#production">4. Reuse the SQL layer for production scoring</a><a href="#choices">What the SQL design teaches</a></nav><div class="article-body"><section id="problem" class="article-section"><h2>The problem: reconstruct the context of a contact</h2><p>For the original campaign-response model, the training unit was a historical contact associated with a customer and account. The task was to describe that contact with relevant history and account context, then attach the observed response.</p><p>SQL assembled those inputs before Python feature preparation. The following examples preserve the important joins, date comparisons, and window-function logic while replacing every source table, schema, field, and local variable with generic names. They omit bank-specific categories, fixed dates, locations, connection details, and business filters.</p><p>These are explanatory adaptations, not queries to execute against a real bank database. The generic schema names do not map to published production tables.</p></section><section id="contacts" class="article-section"><h2>1. Derive recency and prior-contact counts</h2><p>The original history query combines two contact sources. Within each source, window functions order each customer’s contacts by date. LAG finds the earlier contact date; ROW_NUMBER counts the contacts that precede the current row.</p><figure class="code-example"><figcaption><strong>Historical contact features from two sources</strong><span>SQL Server · anonymised, simplified illustration of the original logic</span></figcaption><pre tabindex="0"><code>WITH first_history AS (
+    SELECT
+        client_key,
+        contract_key,
+        campaign_group,
+        CAST(contact_time AS date) AS contact_date,
+        DATEDIFF(
+            day,
+            COALESCE(
+                LAG(contact_time) OVER (
+                    PARTITION BY client_key ORDER BY contact_time
+                ),
+                contact_time
+            ),
+            contact_time
+        ) AS contact_gap_days,
+        ROW_NUMBER() OVER (
+            PARTITION BY client_key ORDER BY contact_time
+        ) - 1 AS earlier_contact_count
+    FROM analytics.contact_source_a
+    WHERE contact_time &gt;= @history_start
+),
+second_history AS (
+    SELECT
+        client_key,
+        contract_key,
+        campaign_group,
+        CAST(contact_time AS date) AS contact_date,
+        DATEDIFF(
+            day,
+            COALESCE(
+                LAG(contact_time) OVER (
+                    PARTITION BY client_key ORDER BY contact_time
+                ),
+                contact_time
+            ),
+            contact_time
+        ) AS contact_gap_days,
+        ROW_NUMBER() OVER (
+            PARTITION BY client_key ORDER BY contact_time
+        ) - 1 AS earlier_contact_count
+    FROM analytics.contact_source_b
+    WHERE contact_time &gt;= @history_start
+),
+contact_events AS (
+    SELECT * FROM first_history
+    UNION
+    SELECT * FROM second_history
+)
+SELECT * FROM contact_events;</code></pre></figure><p>The first contact receives a zero gap because its missing previous date is replaced with its own date. UNION removes identical output rows. As in the original query, the windows are calculated separately for each source before the union; this does not create a single global contact sequence across both systems.</p><p>The original windows order by contact time without a separate tie-breaker. Contacts sharing that time therefore need an explicit ordering rule if the sequence must be unambiguous. @history_start is a generic illustration parameter, replacing fixed private date filters.</p></section><section id="accounts" class="article-section"><h2>2. Join contact and account context</h2><p>A customer can have more than one account. The original query matches both customer and account identifiers, and only accepts an account created before the historical contact. It then calculates age and selected event features relative to that contact date.</p><figure class="code-example"><figcaption><strong>Build account features at the contact date</strong><span>SQL Server · anonymised, simplified illustration of the original logic</span></figcaption><pre tabindex="0"><code>SELECT
+    h.client_key,
+    h.contract_key,
+    h.contact_date,
+    h.contact_gap_days,
+    h.earlier_contact_count,
+    a.product_group,
+    a.channel_group,
+    a.agreement_amount,
+    DATEDIFF(day, a.opened_date, h.contact_date) AS contract_age_days,
+    CASE
+        WHEN a.event_date IS NOT NULL AND a.event_date &lt; h.contact_date
+        THEN 1 ELSE 0
+    END AS event_before_contact,
+    CASE
+        WHEN a.event_date IS NOT NULL AND a.event_date &lt; h.contact_date
+        THEN DATEDIFF(day, a.event_date, h.contact_date)
+        ELSE 999999
+    END AS days_since_event,
+    CASE
+        WHEN a.status_change_date &lt; h.contact_date THEN &#x27;closed&#x27;
+        ELSE &#x27;active&#x27;
+    END AS contract_status_at_contact
+FROM feature_stage.contact_events AS h
+INNER JOIN analytics.account_snapshot AS a
+    ON h.client_key = a.client_key
+   AND h.contract_key = a.contract_key
+   AND a.opened_date &lt; h.contact_date;</code></pre></figure><p>feature_stage.contact_events stands for the preceding history result. The event field represents a generic dated account event. The large numeric fallback mirrors the original “no earlier event” convention.</p><p>The status rule shown is the original date-comparison pattern, with anonymous names. A status-change date alone does not necessarily reconstruct all historical status transitions. Likewise, filtering by opened_date does not make a current snapshot fully point-in-time correct.</p></section><section id="customers" class="article-section"><h2>3. Attach customer features and response labels</h2><p>The original training query adds customer attributes through a left join, retaining the history/account row even when the customer record is missing. Derived age is evaluated at the contact date. The public illustration uses a small generic subset rather than reproducing the private feature inventory.</p><figure class="code-example"><figcaption><strong>Enrich the contact-account rows</strong><span>SQL Server · anonymised, simplified illustration of the original logic</span></figcaption><pre tabindex="0"><code>SELECT
+    h.*,
+    DATEDIFF(year, c.birth_date, h.contact_date) AS age_year_boundaries,
+    c.relationship_months,
+    c.segment_group
+FROM feature_stage.contact_account_features AS h
+LEFT JOIN analytics.client_snapshot AS c
+    ON h.client_key = c.client_key;</code></pre></figure><p>DATEDIFF(year, ...) counts calendar-year boundaries; it is not an exact completed-years birthday calculation. The original code uses that approximation. Joining a current customer snapshot also requires review if attributes can change over time.</p><p>The original response label is attached later in Python, rather than generated by the training SQL. The logic matches customer and contact date, then removes rows without a known outcome.</p><figure class="code-example"><figcaption><strong>Attach observed responses in the preparation layer</strong><span>Python · anonymised, simplified illustration of the original logic</span></figcaption><pre tabindex="0"><code>label_columns = [&quot;client_key&quot;, &quot;contact_date&quot;, &quot;response_label&quot;]
+labelled_contacts = contact_features.merge(
+    observed_responses[label_columns],
+    how=&quot;left&quot;,
+    on=[&quot;client_key&quot;, &quot;contact_date&quot;],
+)
+labelled_contacts = labelled_contacts.dropna(subset=[&quot;response_label&quot;])</code></pre></figure><p>This creates labelled records, but the join keys must identify the intended contact. Multiple contacts or response rows for the same customer/date can multiply records. Outcome definitions and the response observation window need to match the campaign process.</p></section><section id="production" class="article-section"><h2>4. Reuse the SQL layer for production scoring</h2><p>At scoring time, the deployment queries extract active customer and account information, calculating current-account features against the scoring date. The production preparation script also loads historical contacts and a response file.</p><p>Recent response records are excluded for a fixed maturation interval before the history is summarised. The summaries record the latest contact date, contact count, an indicator of whether any matched historical response was positive, and a communication-type aggregate. The response indicator is not the outcome of the most recent contact. Python writes these, plus account and customer extracts, to Parquet for the scoring step.</p><p>The candidate file is then joined to those cached tables. Production scoring calculates current recency and calendar features, normalises categories, selects model columns, loads the fitted pipeline, and ranks probabilities. See the <a href="banking-project.html#production">production setup article</a> for the handoff.</p></section><section id="choices" class="article-section"><h2>What the SQL design teaches</h2><p>The SQL layer establishes the unit of analysis and the meaning of time-dependent inputs. Window functions supply contact-history features; joins combine operational sources; date comparisons keep selected events tied to the contact being modelled.</p><p>The archived implementation also exposes important review points: source-local histories, duplicate-sensitive joins, current snapshots used for historical enrichment, date-unit differences, and approximate age. Preserving these distinctions in the explanation is more useful than presenting an idealised query that the original system did not use.</p><p>The public examples are deliberately shortened and renamed. They explain the method without exposing the bank’s schema, identifiers, infrastructure, categories, or customer records.</p></section><section class="article-section experience"><h2>What this work demonstrates</h2><p>This work demonstrates SQL window functions, multi-source joins, date-relative features, and the connection between warehouse extracts and Python modelling. The examples also explain the boundaries of historical reconstruction and operational scoring.</p></section><p class="source-note">Examples follow the project’s source logic. Bank-derived identifiers are anonymised where needed; excerpts are not standalone scripts. The full repository remains private.</p><nav class="part-links" aria-label="Articles in this project"><span>Campaign response modelling · Article series</span><a href="banking-project.html">Introduction · Banking problem</a><a href="data-preparation.html">01 · Data preparation</a><a href="workflow.html">02 · Model development</a><a href="validation.html">03 · Validation</a><a href="methodology.html">04 · Methodology</a><a href="sql-feature-engineering.html" aria-current="page">05 · SQL feature engineering</a></nav></div></div></article></main><footer class="wrap"><span>Ruddi Garcia · Project portfolio</span><a href="#">Back to top ↑</a></footer></body></html>
