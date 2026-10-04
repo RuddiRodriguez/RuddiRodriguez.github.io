@@ -1,4 +1,4 @@
-# Ruddi Garcia — Portfolio
+# Ruddi Rodriguez Garcia — Portfolio
 
 GitHub Pages portfolio with six linked blog articles about different parts of Tabular Classifier Flow.
 
