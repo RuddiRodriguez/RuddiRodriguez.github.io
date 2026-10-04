@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Data preparation · Ruddi Garcia</title>
+<meta name="description" content="Ruddi Garcia's project portfolio. Explore a reusable model-development workflow and a validation case study.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=6">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="wrap"><a class="brand" href="index.html">RG<span>Ruddi Garcia</span></a><nav aria-label="Main navigation"><a href="index.html">Projects</a><a href="https://github.com/RuddiRodriguez">GitHub ↗</a></nav></header>
+<main id="main"><div class="wrap page-back"><a href="index.html">← All project entries</a></div><section id="data-preparation" class="project wrap" aria-labelledby="data-title">
+<div class="project-top"><p class="eyebrow">PROJECT PART / DATA PREPARATION</p><span class="badge">Python · Data preparation</span></div>
+<div class="project-heading"><div><p class="number">03 / TABULAR CLASSIFIER FLOW</p><h2 id="data-title">Start with data.<br>Make training repeatable.</h2></div><p class="lead">The first part of my classification project: load an existing table or generate campaign demonstration data, separate training from testing, and prepare numeric and categorical columns for the model.</p></div>
+<div class="flow" aria-label="Data preparation workflow"><div><span>01</span><h3>Choose input</h3><p>Set the CSV path and the yes-or-no outcome column in project settings.</p></div><div><span>02</span><h3>Split records</h3><p>Shuffle rows into training and test sets with a fixed random seed.</p></div><div><span>03</span><h3>Prepare columns</h3><p>Scale numeric values and convert text categories into numeric codes.</p></div><div><span>04</span><h3>Reuse preparation</h3><p>Keep the transformations and model together in the same pipeline.</p></div></div>
+<div class="details"><article><p class="eyebrow">REAL INPUT OR DEMONSTRATION DATA</p><h3>Two starting points.</h3><p>Existing datasets enter through a CSV reader. A separate generator creates fictional campaign contacts, repeated customer histories, previous response information, and a configurable response rate.</p><p>The generator uses a fixed seed for repeatable demonstrations. Its outcome column is named Responsflag; the campaign demonstration needs matching project settings.</p></article><article><p class="eyebrow">TRAINING AND TESTING</p><h3>Keep the outcome balance.</h3><p>The current settings reserve 20% of records for testing and 80% for training. The split keeps roughly the same proportion of each outcome in both sets and writes separate CSV files.</p><p>This is a random split of rows. It does not separate customers or reserve a later time period.</p></article></div>
+<div class="details"><article><p class="eyebrow">NUMBERS AND CATEGORIES</p><h3>Prepare each column type.</h3><p>Numeric columns are put on a common scale. Text categories receive numeric codes, with a reserved value for categories not seen during fitting.</p><p>These transformations are fitted as part of the model pipeline and reused when scoring new records.</p></article><article><p class="eyebrow">REPEATABLE HANDOFF</p><h3>Ready for model comparison.</h3><p>The prepared workflow produces training and test tables, plus a reusable preprocessing pipeline. The split script reports row counts and the outcome rate in each set.</p><p>That creates the starting point for comparing candidate models—the next part of the same project.</p></article></div>
+<nav class="part-links" aria-label="Related parts of Tabular Classifier Flow"><span>Explore this project</span><a href="data-preparation.html">Data preparation</a><a href="workflow.html">Full workflow</a><a href="validation.html">Validation</a></nav>
+<div class="project-note"><p>Based on the repository’s data-generation, splitting, and preprocessing code. One part of Tabular Classifier Flow.</p><a href="workflow.html">See the full workflow ↓</a></div>
+</section>
+</main><footer class="wrap"><span>Ruddi Garcia · Project portfolio</span><a href="#">Back to top ↑</a></footer>
+</body></html>

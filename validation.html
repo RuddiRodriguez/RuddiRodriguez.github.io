@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Model validation · Ruddi Garcia</title>
+<meta name="description" content="Ruddi Garcia's project portfolio. Explore a reusable model-development workflow and a validation case study.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=6">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="wrap"><a class="brand" href="index.html">RG<span>Ruddi Garcia</span></a><nav aria-label="Main navigation"><a href="index.html">Projects</a><a href="https://github.com/RuddiRodriguez">GitHub ↗</a></nav></header>
+<main id="main"><div class="wrap page-back"><a href="index.html">← All project entries</a></div><section id="projects" class="project wrap" aria-labelledby="project-title"><div class="project-top"><p class="eyebrow">FEATURED PROJECT</p><span class="badge">Python · Machine learning</span></div><div class="project-heading"><div><p class="number">01 / RESPONSE MODEL</p><h2 id="project-title">Making model<br>performance actionable.</h2></div><p class="lead">A reusable validation workflow for binary response models. It evaluates predictions, compares selection choices, and exports reports that help explain the trade-offs.</p></div>
+<div class="flow" aria-label="Project workflow"><div><span>01</span><h3>Load</h3><p>Read test data and a saved model pipeline.</p></div><div><span>02</span><h3>Score</h3><p>Produce scores and rank records by predicted response.</p></div><div><span>03</span><h3>Evaluate</h3><p>Compare prediction quality and selection cutoffs.</p></div><div><span>04</span><h3>Report</h3><p>Export tables and optional visual reports.</p></div></div>
+<div class="details"><article><p class="eyebrow">THE QUESTION</p><h3>Who should we select?</h3><p>A response score alone does not tell us how many records to select, how many positive responses we might capture, or how many incorrect selections we might make.</p><p>This workflow examines those choices at different score cutoffs and at different sizes of the highest-ranked group.</p></article><article><p class="eyebrow">THE APPROACH</p><h3>Look beyond one metric.</h3><ul><li>Measure correct predictions, missed positives, and incorrect selections.</li><li>Compare precision and recall: how reliable selections are, and how many positives they capture.</li><li>Review lift and gain: how ranking compares with selecting without a model.</li><li>Inspect probability calibration when probability scores are available.</li></ul></article></div>
+<div class="outputs"><div><p class="eyebrow">WHAT THE WORKFLOW PRODUCES</p><h3>Reports you can inspect.</h3></div><ul><li>Validation metrics</li><li>Score-cutoff comparison</li><li>Top-ranked selection summary</li><li>Ranked predictions</li><li>Lift and gain tables</li><li>Static and interactive charts</li></ul></div>
+<section class="results" aria-labelledby="results-title">
+<p class="eyebrow">SAVED VALIDATION RESULTS</p>
+<h3 id="results-title">See the model’s trade-offs.</h3>
+<p class="results-intro">These charts come from saved project reports. The project currently supports a credit-card fraud example as well as response-model workflows. The original run’s dataset and cutoff have not been independently reproduced, so these are saved report examples rather than a new performance benchmark.</p>
+<div class="result-stats">
+<div><strong>87 / 98</strong><span>Positive cases detected</span><small>88.8% of actual positives</small></div>
+<div><strong>66</strong><span>False alarms</span><small>Negative cases flagged as positive</small></div>
+<div><strong>56.9%</strong><span>Selection precision</span><small>87 positives among 153 flagged records</small></div>
+</div>
+<div class="report-gallery">
+<figure><a href="assets/confusion-matrix.png"><img src="assets/confusion-matrix.png" alt="Saved confusion matrix: 56,798 true negatives, 66 false positives, 11 false negatives and 87 true positives." loading="lazy" width="779" height="701"></a><figcaption><strong>Correct predictions and errors</strong>Across 56,962 records, the saved report shows 87 positives detected and 11 missed. Click to view the full chart.</figcaption></figure>
+<figure><a href="assets/precision-recall.png"><img src="assets/precision-recall.png" alt="Saved precision-recall curve showing average precision rounded to 0.74." loading="lazy" width="688" height="701"></a><figcaption><strong>Reliability versus coverage</strong>Shows how selection reliability changes as more positive cases are captured. Saved average precision: approximately 0.74.</figcaption></figure>
+<figure><a href="assets/roc-curve.png"><img src="assets/roc-curve.png" alt="Saved ROC curve with area under the curve rounded to 0.98, compared with a diagonal baseline." loading="lazy" width="688" height="701"></a><figcaption><strong>Ranking quality</strong>Compares positive detection with false alarms across score cutoffs. Saved area under the curve: approximately 0.98.</figcaption></figure>
+</div>
+<p class="results-context">Percentages above are calculated from the saved confusion matrix. Scores describe this saved example; they do not establish campaign impact or future performance. The workflow can choose a cutoff using evaluation labels, so a separate final test is needed before claiming independent performance.</p>
+</section>
+<nav class="part-links" aria-label="Related parts of Tabular Classifier Flow"><span>Explore this project</span><a href="data-preparation.html">Data preparation</a><a href="workflow.html">Full workflow</a><a href="validation.html">Validation</a></nav>
+<div class="project-note"><p>Implementation overview based on the project’s validation code. Saved aggregate charts are shared here; customer records and business outcomes are not published. Source repository is private.</p><a href="https://github.com/RuddiRodriguez">Visit my GitHub profile ↗</a></div></section>
+</main><footer class="wrap"><span>Ruddi Garcia · Project portfolio</span><a href="#">Back to top ↑</a></footer>
+</body></html>
