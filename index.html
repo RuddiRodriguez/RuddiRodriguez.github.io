@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ruddi Garcia · Project portfolio</title>
+<meta name="description" content="Ruddi Garcia's project portfolio. Explore a response-model validation workflow that turns predictions into measurable selection decisions.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="wrap"><a class="brand" href="#">RG<span>Ruddi Garcia</span></a><nav aria-label="Main navigation"><a href="#projects">Projects</a><a href="https://github.com/RuddiRodriguez">GitHub ↗</a></nav></header>
+<main id="main">
+<section class="hero wrap"><p class="eyebrow">PROJECT PORTFOLIO / 01</p><h1>From predictions<br>to <em>clear decisions.</em></h1><div class="intro"><p>A collection of my work in machine learning, starting with a practical question: how do we know which predictions are useful?</p><a class="button" href="#projects">Explore the first project <span aria-hidden="true">↓</span></a></div></section>
+<section id="projects" class="project wrap" aria-labelledby="project-title"><div class="project-top"><p class="eyebrow">FEATURED PROJECT</p><span class="badge">Python · Machine learning</span></div><div class="project-heading"><div><p class="number">01 / RESPONSE MODEL</p><h2 id="project-title">Making model<br>performance actionable.</h2></div><p class="lead">A reusable validation workflow for binary response models. It evaluates predictions, compares selection choices, and exports reports that help explain the trade-offs.</p></div>
+<div class="flow" aria-label="Project workflow"><div><span>01</span><h3>Load</h3><p>Read test data and a saved model pipeline.</p></div><div><span>02</span><h3>Score</h3><p>Produce scores and rank records by predicted response.</p></div><div><span>03</span><h3>Evaluate</h3><p>Compare prediction quality and selection cutoffs.</p></div><div><span>04</span><h3>Report</h3><p>Export tables and optional visual reports.</p></div></div>
+<div class="details"><article><p class="eyebrow">THE QUESTION</p><h3>Who should we select?</h3><p>A response score alone does not tell us how many records to select, how many positive responses we might capture, or how many incorrect selections we might make.</p><p>This workflow examines those choices at different score cutoffs and at different sizes of the highest-ranked group.</p></article><article><p class="eyebrow">THE APPROACH</p><h3>Look beyond one metric.</h3><ul><li>Measure correct predictions, missed positives, and incorrect selections.</li><li>Compare precision and recall: how reliable selections are, and how many positives they capture.</li><li>Review lift and gain: how ranking compares with selecting without a model.</li><li>Inspect probability calibration when probability scores are available.</li></ul></article></div>
+<div class="outputs"><div><p class="eyebrow">WHAT THE WORKFLOW PRODUCES</p><h3>Reports you can inspect.</h3></div><ul><li>Validation metrics</li><li>Score-cutoff comparison</li><li>Top-ranked selection summary</li><li>Ranked predictions</li><li>Lift and gain tables</li><li>Static and interactive charts</li></ul></div>
+<div class="project-note"><p>Implementation overview based on the project’s validation code. Performance scores and business outcomes are not published here. Source repository is private.</p><a href="https://github.com/RuddiRodriguez">Visit my GitHub profile ↗</a></div></section>
+</main><footer class="wrap"><span>Ruddi Garcia · Project portfolio</span><a href="#">Back to top ↑</a></footer>
+</body></html>
