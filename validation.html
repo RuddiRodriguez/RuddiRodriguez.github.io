@@ -1,19 +1,62 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Model validation · Ruddi Garcia</title>
-<meta name="description" content="Ruddi Garcia's project portfolio. Explore a reusable model-development workflow and a validation case study.">
-<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=6">
-</head>
-<body>
-<a class="skip" href="#main">Skip to content</a>
-<header class="wrap"><a class="brand" href="index.html">RG<span>Ruddi Garcia</span></a><nav aria-label="Main navigation"><a href="index.html">Projects</a><a href="https://github.com/RuddiRodriguez">GitHub ↗</a></nav></header>
-<main id="main"><div class="wrap page-back"><a href="index.html">← All project entries</a></div><section id="projects" class="project wrap" aria-labelledby="project-title"><div class="project-top"><p class="eyebrow">FEATURED PROJECT</p><span class="badge">Python · Machine learning</span></div><div class="project-heading"><div><p class="number">01 / RESPONSE MODEL</p><h2 id="project-title">Making model<br>performance actionable.</h2></div><p class="lead">A reusable validation workflow for binary response models. It evaluates predictions, compares selection choices, and exports reports that help explain the trade-offs.</p></div>
-<div class="flow" aria-label="Project workflow"><div><span>01</span><h3>Load</h3><p>Read test data and a saved model pipeline.</p></div><div><span>02</span><h3>Score</h3><p>Produce scores and rank records by predicted response.</p></div><div><span>03</span><h3>Evaluate</h3><p>Compare prediction quality and selection cutoffs.</p></div><div><span>04</span><h3>Report</h3><p>Export tables and optional visual reports.</p></div></div>
-<div class="details"><article><p class="eyebrow">THE QUESTION</p><h3>Who should we select?</h3><p>A response score alone does not tell us how many records to select, how many positive responses we might capture, or how many incorrect selections we might make.</p><p>This workflow examines those choices at different score cutoffs and at different sizes of the highest-ranked group.</p></article><article><p class="eyebrow">THE APPROACH</p><h3>Look beyond one metric.</h3><ul><li>Measure correct predictions, missed positives, and incorrect selections.</li><li>Compare precision and recall: how reliable selections are, and how many positives they capture.</li><li>Review lift and gain: how ranking compares with selecting without a model.</li><li>Inspect probability calibration when probability scores are available.</li></ul></article></div>
-<div class="outputs"><div><p class="eyebrow">WHAT THE WORKFLOW PRODUCES</p><h3>Reports you can inspect.</h3></div><ul><li>Validation metrics</li><li>Score-cutoff comparison</li><li>Top-ranked selection summary</li><li>Ranked predictions</li><li>Lift and gain tables</li><li>Static and interactive charts</li></ul></div>
-<section class="results" aria-labelledby="results-title">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Turning model scores into selection decisions · Ruddi Garcia</title><meta name="description" content="How I validate binary classifiers, compare cutoffs and ranked groups, and explain saved reports."><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=7"></head>
+<body><a class="skip" href="#main">Skip to content</a><header class="wrap"><a class="brand" href="index.html">RG<span>Ruddi Garcia</span></a><nav aria-label="Main navigation"><a href="index.html">Projects</a><a href="https://github.com/RuddiRodriguez">GitHub ↗</a></nav></header>
+<main id="main"><div class="wrap page-back"><a href="index.html">← All project entries</a></div><article class="wrap blog-article"><div class="article-header"><p class="eyebrow">PART 03 / VALIDATION</p><h1>Turning model scores into selection decisions</h1><p class="article-lead">How I connect prediction quality with practical selection choices, using reusable scoring functions, ranked-group summaries, and visual reports.</p><p class="article-byline">By Ruddi Garcia · Tabular Classifier Flow · Python</p></div><nav class="part-links" aria-label="Articles in this project"><span>Tabular Classifier Flow · Article series</span><a href="data-preparation.html">01 · Data preparation</a><a href="workflow.html">02 · Model development</a><a href="validation.html" aria-current="page">03 · Validation</a></nav><div class="article-layout"><nav class="article-toc" aria-label="In this article"><span>IN THIS ARTICLE</span><a href="#problem">The problem: a score is not a selection decision</a><a href="#score">1. Support different model outputs</a><a href="#evaluate">2. Collect a consistent evaluation result</a><a href="#selection">3. Evaluate a fixed selection size</a><a href="#reports">4. Export results for review</a></nav><div class="article-body"><section id="problem" class="article-section"><h2>The problem: a score is not a selection decision</h2><p>A binary classifier produces a score or label for each record. For a response model, I also need to know how many records to select, how reliable those selections are, and how many positive responses they capture.</p><p>I built the validation layer to answer those questions together. It loads a saved pipeline, scores the evaluation dataset, examines selection cutoffs and ranked groups, and exports both tables and charts.</p><p>The same utility can evaluate different binary classification models. The project currently includes a fraud-data configuration, while its response-model workflow asks similar ranking and selection questions.</p></section><section id="score" class="article-section"><h2>1. Support different model outputs</h2><p>Not every classifier exposes the same scoring method. My validator prefers positive-class probabilities, falls back to decision scores, and finally supports predicted labels.</p><figure class="code-example"><figcaption><strong>Extract the model’s positive-class scores</strong><span>tabular_classifier_flow/utils/validation.py · score_data() · lines 83–91</span></figcaption><pre tabindex="0" aria-label="Python code for score_data"><code>def score_data(model: Any, X: pd.DataFrame):
+    if hasattr(model, &quot;predict_proba&quot;):
+        probabilities = model.predict_proba(X)
+        return probabilities[:, 1], probabilities
+
+    if hasattr(model, &quot;decision_function&quot;):
+        return model.decision_function(X), None
+
+    return model.predict(X), None</code></pre></figure><p>predict_proba returns one column per class; this workflow uses the second column for positive class 1. decision_function supplies a ranking score when probabilities are unavailable. Falling back to labels supports evaluation, but labels offer much less detail for comparing cutoffs.</p><p>Probability calibration charts are only produced when probability outputs are available and the scores fall within the probability range. A decision score should not be presented as a response probability.</p></section><section id="evaluate" class="article-section"><h2>2. Collect a consistent evaluation result</h2><p>The central evaluate function coordinates scoring, cutoff selection, labels, ranked predictions, and reporting tables. Returning those outputs together gives the plotting and dashboard layers a shared result to inspect.</p><figure class="code-example"><figcaption><strong>Coordinate evaluation and report construction</strong><span>tabular_classifier_flow/utils/validation.py · evaluate() · lines 61–80</span></figcaption><pre tabindex="0" aria-label="Python code for evaluate"><code>def evaluate(self, model: Any, X: pd.DataFrame, y: pd.Series, dataset_name: str = &quot;validation&quot;):
+    scores, probabilities = self.score_data(model, X)
+    threshold = self.config.threshold
+    if threshold is None:
+        threshold = self.best_threshold(y, scores)
+
+    labels = self.to_labels(scores, threshold)
+    predictions = self.prediction_frame(X, y, scores, labels)
+    lift_gain = self.lift_gain_frame(predictions)
+
+    return ValidationResult(
+        metrics=self.metrics_frame(y, scores, labels, threshold, dataset_name),
+        predictions=predictions,
+        lift_gain=lift_gain,
+        threshold_analysis=self.threshold_analysis_frame(y, scores),
+        selection_summary=self.selection_summary_frame(predictions),
+        scores=scores,
+        labels=labels,
+        probabilities=probabilities,
+    )</code></pre></figure><p>ValidationResult collects prediction metrics, cutoff analysis, ranked-group summaries, predictions, lift/gain, and the original scores. The same result supports file exports and dashboard reporting.</p><figure class="code-example"><figcaption><strong>Choose a cutoff when none is configured</strong><span>tabular_classifier_flow/utils/validation.py · best_threshold() · lines 99–101</span></figcaption><pre tabindex="0" aria-label="Python code for best_threshold"><code>def best_threshold(y_true, scores):
+    false_positive_rate, true_positive_rate, thresholds = roc_curve(y_true, scores)
+    return float(thresholds[np.argmax(true_positive_rate - false_positive_rate)])</code></pre></figure><p>This function selects the ROC point with the largest difference between positive detection and false-alarm rates. It is a statistical rule; it does not directly optimise campaign budget or the financial cost of mistakes.</p><p>The code chooses this cutoff from the supplied evaluation labels when no fixed cutoff is configured. That means the resulting label-based performance is not an untouched final-test estimate. For independent final evaluation, a cutoff should be selected separately and then fixed.</p></section><section id="selection" class="article-section"><h2>3. Evaluate a fixed selection size</h2><p>A team may be able to contact only a certain percentage of records. The validator therefore evaluates the highest-ranked 1%, 2%, 5%, and other configured group sizes, rather than relying only on a single score cutoff.</p><figure class="code-example"><figcaption><strong>Summarise top-ranked groups</strong><span>tabular_classifier_flow/utils/validation.py · selection_summary_frame() · lines 172–198</span></figcaption><pre tabindex="0" aria-label="Python code for selection_summary_frame"><code>def selection_summary_frame(self, prediction_frame):
+    total_records = len(prediction_frame)
+    total_positives = prediction_frame[self.config.target_column].sum()
+    base_positive_rate = total_positives / total_records if total_records else 0
+    rows = []
+
+    for top_percent in self.config.selection_percentages:
+        selected_count = int(np.ceil(total_records * top_percent / 100))
+        selected_count = min(max(selected_count, 1), total_records)
+        top_frame = prediction_frame.head(selected_count)
+        positives_found = int(top_frame[self.config.target_column].sum())
+        precision = positives_found / selected_count if selected_count else 0
+        recall = positives_found / total_positives if total_positives else 0
+
+        rows.append(
+            {
+                &quot;top_percent&quot;: top_percent,
+                &quot;selected_count&quot;: selected_count,
+                &quot;positives_found&quot;: positives_found,
+                &quot;precision&quot;: precision,
+                &quot;recall&quot;: recall,
+                &quot;lift&quot;: precision / base_positive_rate if base_positive_rate else 0,
+                &quot;min_score&quot;: top_frame[self.config.score_column].min(),
+            }
+        )
+
+    return pd.DataFrame(rows)</code></pre></figure><p>The prediction table is already sorted by score. For each requested group size, the function counts selected records and captured positives. Precision measures the positive share of selections; recall measures the share of all positives captured; lift compares that precision with the dataset’s overall positive rate.</p><p>The related lift/gain table groups records by ranking. Together, these outputs make it possible to inspect how concentrating selection near the top changes coverage and reliability.</p></section><section id="reports" class="article-section"><h2>4. Export results for review</h2><p>validation.py writes five outputs: prediction metrics, cutoff analysis, ranked-group summaries, scored predictions, and a lift/gain table. Optional plotting produces static charts and interactive HTML reports.</p><p>The reports cover ROC, precision/recall, confusion matrices, calibration when available, lift/gain, and selection analysis. This keeps the numeric output accessible outside the Python process and gives the dashboard reusable tables.</p><p>The saved charts below are original aggregate project artifacts. Their counts can be inspected, but the original dataset and cutoff have not been independently reproduced here. They are examples of reporting output, not a claim of campaign impact.</p></section><section class="results" aria-labelledby="results-title">
 <p class="eyebrow">SAVED VALIDATION RESULTS</p>
 <h3 id="results-title">See the model’s trade-offs.</h3>
 <p class="results-intro">These charts come from saved project reports. The project currently supports a credit-card fraud example as well as response-model workflows. The original run’s dataset and cutoff have not been independently reproduced, so these are saved report examples rather than a new performance benchmark.</p>
@@ -29,7 +72,4 @@
 </div>
 <p class="results-context">Percentages above are calculated from the saved confusion matrix. Scores describe this saved example; they do not establish campaign impact or future performance. The workflow can choose a cutoff using evaluation labels, so a separate final test is needed before claiming independent performance.</p>
 </section>
-<nav class="part-links" aria-label="Related parts of Tabular Classifier Flow"><span>Explore this project</span><a href="data-preparation.html">Data preparation</a><a href="workflow.html">Full workflow</a><a href="validation.html">Validation</a></nav>
-<div class="project-note"><p>Implementation overview based on the project’s validation code. Saved aggregate charts are shared here; customer records and business outcomes are not published. Source repository is private.</p><a href="https://github.com/RuddiRodriguez">Visit my GitHub profile ↗</a></div></section>
-</main><footer class="wrap"><span>Ruddi Garcia · Project portfolio</span><a href="#">Back to top ↑</a></footer>
-</body></html>
+<section class="article-section experience"><h2>What this work demonstrates</h2><p>This part demonstrates my work in model scoring, threshold analysis, ranking evaluation, reusable report structures, and plain-language interpretation of prediction errors. It also makes the limits of a saved evaluation explicit.</p></section><p class="source-note">Code excerpts are taken from this project’s source files. They show selected functions, not standalone scripts. The full repository remains private.</p><nav class="part-links" aria-label="Articles in this project"><span>Tabular Classifier Flow · Article series</span><a href="data-preparation.html">01 · Data preparation</a><a href="workflow.html">02 · Model development</a><a href="validation.html" aria-current="page">03 · Validation</a></nav></div></div></article></main><footer class="wrap"><span>Ruddi Garcia · Project portfolio</span><a href="#">Back to top ↑</a></footer></body></html>

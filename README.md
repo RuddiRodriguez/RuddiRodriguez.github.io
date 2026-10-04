@@ -1,25 +1,29 @@
 # Ruddi Garcia — Portfolio
 
-Personal portfolio hosted on GitHub Pages. The first project describes the response-model validation workflow without publishing private code, customer data, or unverified results.
+GitHub Pages portfolio with three linked blog articles about different parts of Tabular Classifier Flow.
 
-Edit `index.html` to update content and `style.css` to adjust appearance. GitHub Pages publishes the root of the `main` branch.
+- `index.html`: portfolio homepage and article links.
+- `data-preparation.html`: data loading, splitting, preprocessing, and synthetic campaign histories.
+- `workflow.html`: model comparison, refinement, Optuna tuning, persistence, and dashboard reporting.
+- `validation.html`: scoring, cutoffs, top-ranked selections, reporting, and saved charts.
+- `style.css`: shared responsive layout and readable code examples.
 
-## Saved report evidence
+Each article explains the problem, implemented approach, selected source functions, design limits, and demonstrated work. Code excerpts are selected functions rather than standalone scripts. The complete source repository remains private. No raw customer records, credentials, or serialized models are included.
 
-Three aggregate charts were copied from `Model/validation_plots/` in the private source project at commit `069779c5e317ca24ac64e9219df5d56214346196`:
+Edit the HTML files to update articles. GitHub Pages publishes the root of `main`. Bump the stylesheet query version when changing CSS so returning visitors load the new styles.
+
+## Evidence
+
+Articles were checked against the source files in `tabular_classifier_flow/` in `RuddiRodriguez/Response_model_t`. Excerpts include source filenames, function names, and line ranges from the reviewed snapshot.
+
+Three original aggregate charts were copied from `Model/validation_plots/` at source commit `069779c5e317ca24ac64e9219df5d56214346196`:
 
 - `test_confusion_matrix.png`: TN 56,798; FP 66; FN 11; TP 87.
 - `test_precision_recall_curve.png`: displayed average precision 0.74 (rounded).
 - `test_roc_curve.png`: displayed AUC 0.98 (rounded).
 
-Recall is calculated as 87 / 98; precision as 87 / 153. The original run's dataset and cutoff were not independently reproduced. Current source configuration refers to credit-card fraud data; this does not prove the saved plots' dataset provenance. No raw records or serialized models are included.
+Recall is calculated as 87 / 98; precision as 87 / 153. The original run's dataset and cutoff were not independently reproduced. Current configuration refers to credit-card fraud data; it does not prove the saved plots' dataset provenance. The source validator can select a cutoff from supplied evaluation labels, so saved label-based metrics are not presented as an independent final benchmark.
 
-The source validator can select a cutoff using evaluation labels when no cutoff is supplied. The portfolio therefore presents these as saved report examples, not an independently reproduced final benchmark.
+## Verification
 
-## Tabular Classifier Flow portfolio entry
-
-The second project entry summarizes `tabular_classifier_flow/README.md`: reusable configuration, CSV train/test preparation, model comparison, candidate refinement, Optuna tuning, saved pipelines, validation outputs, optional permutation importance, and the Streamlit dashboard. It does not claim a newly run model or a live dashboard. The original validation entry remains available at `#projects`.
-
-## Separate project parts
-
-The data-preparation entry at `#data-preparation` describes verified generation, CSV loading, random stratified splitting, and default numeric scaling/categorical encoding. Campaign synthetic data uses `Responsflag`; settings must match that outcome. Current split settings use a 20% test share. Random row splitting is not a customer-group or chronological split. Entries are parts of the same project, not separate claimed implementations.
+Local checks covered section anchors, file links, source-derived code excerpts, and article layouts at narrow and desktop widths. The portfolio describes implemented code; no model training or dashboard deployment was performed for these articles.
