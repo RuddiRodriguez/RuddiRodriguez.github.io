@@ -1,0 +1,126 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Python, SQL, APIs and Excel reporting · Ruddi Rodriguez Garcia</title><meta name="description" content="How I connect SQL databases, Python analysis, email-service APIs and Excel reports, with anonymised code examples."><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=9"></head><body><a class="skip" href="#main">Skip to content</a><header class="wrap"><a class="brand" href="index.html">RG<span>Ruddi Rodriguez Garcia</span></a><nav aria-label="Main navigation"><a href="index.html">Projects</a><a href="https://github.com/RuddiRodriguez">GitHub ↗</a></nav></header><main id="main"><div class="wrap page-back"><a href="index.html">← All project entries</a></div><article class="wrap blog-article"><div class="article-header"><p class="eyebrow">PYTHON / SQL / EXCEL / API REPORTING</p><h1>From databases to reports</h1><p class="article-lead">How I use Python to query SQL, connect operational records, analyse service responses, and turn the results into Excel reports.</p><p class="article-byline">By Ruddi Rodriguez Garcia · Data analysis and reporting</p></div><div class="article-layout"><nav class="article-toc" aria-label="In this article"><span>IN THIS ARTICLE</span><a href="#problem">The reporting problem</a><a href="#sql">SQL through Python</a><a href="#joins">Cleaning and matching</a><a href="#responses">Response rules</a><a href="#summary">Report calculations</a><a href="#api">Email-service API</a><a href="#selection">Write back to SQL</a><a href="#excel">Excel and CSV output</a><a href="#example">Example report and code</a><a href="#experience">My experience</a></nav><div class="article-body"><section id="problem" class="article-section"><h2>The job: turn operational data into a useful report</h2><p>I developed reporting workflows that connected SQL databases, campaign-contact records, operational activity, and an email-service API. Python handled the joins and calculations, then updated Excel reports and exported reusable tables. Related scripts also produced monthly HTML charts.</p><p>The difficult part was connecting records that used different identifiers and deciding what counted as a response. A contact, a callback, a link click, an application, and a completed outcome represent different events. A useful report needs a clear relationship between them, a time window, and a consistent counting unit.</p><p>This entry brings those related workflows together to show my experience with Python, SQL, Excel, APIs, and reporting. Code examples adapt the original logic with generic table names, columns, status values, and file locations. The small output example uses invented data.</p></section>
+<section id="sql" class="article-section"><h2>1. Load SQL data into Python</h2><p>SQL extracts the relevant records and performs joins close to the source. In one workflow, a scheduled-callback table carried an account reference inside an attribute field. The query extracted that reference, joined an account table, and filtered by contact date.</p><p>This anonymised SQL Server example keeps that pattern. The substring position describes the particular attribute layout in the source; it is not a universal way to find an account number.</p><figure class="code-example"><figcaption><strong>Callbacks joined to accounts</strong><span>SQL Server · generic schema</span></figcaption><pre tabindex="0"><code>
+SELECT c.callback_id,
+       c.scheduled_at,
+       CAST(c.scheduled_at AS date) AS contact_date,
+       a.account_id
+FROM dbo.scheduled_callbacks AS c
+LEFT JOIN dbo.accounts AS a
+    ON SUBSTRING(c.attributes, 12, 10) = a.account_number
+WHERE CAST(c.scheduled_at AS date) &gt; :start_date
+</code></pre></figure><figure class="code-example"><figcaption><strong>Read the query result as a DataFrame</strong><span>Python · anonymised adaptation</span></figcaption><pre tabindex="0"><code>def load_callbacks(connection, start_date):
+    from sqlalchemy import text
+    return pd.read_sql_query(
+        text(CALLBACK_QUERY), connection,
+        params={&#x27;start_date&#x27;: start_date},
+    )</code></pre></figure><p>The supplied connection identifies the database. A query parameter supplies the date, and the returned DataFrame becomes the input to the Python analysis. The historical workflows used database helpers and SQLAlchemy/ODBC connections; this adaptation exposes the same query-to-table step directly.</p><p>Another workflow ran SQL files in a defined order to prepare current-customer, recent-contact, and recent-activity tables:</p><figure class="code-example"><figcaption><strong>Execute SQL files from Python</strong><span>Python · anonymised adaptation</span></figcaption><pre tabindex="0"><code>def prepare_reporting_tables(engine, sql_files):
+    with engine.begin() as connection:
+        for path in sql_files:
+            sql = Path(path).read_text(encoding=&#x27;utf-8-sig&#x27;)
+            connection.exec_driver_sql(sql)</code></pre></figure><p>Each file contains one part of the database preparation. Keeping SQL in files makes those rules visible separately from the Python orchestration. The original month filters used SQL Server <code>DATEDIFF(MONTH, ...)</code>, which counts calendar-month boundaries.</p></section>
+<section id="joins" class="article-section"><h2>2. Clean identifiers and match the right population</h2><p>Before joining, account references must use compatible formats and date columns must be real dates. The source cleaned account separators and postal-code spacing, then converted contact and activity timestamps. Here those names are generic:</p><figure class="code-example"><figcaption><strong>Normalise keys and dates</strong><span>Python · anonymised adaptation</span></figcaption><pre tabindex="0"><code>def clean_tables(contacts, activities):
+    contacts = contacts.copy()
+    activities = activities.copy()
+    contacts[&#x27;account_id&#x27;] = contacts[&#x27;account_id&#x27;].str.replace(&#x27;-&#x27;, &#x27;&#x27;, regex=False)
+    contacts[&#x27;postal_code&#x27;] = contacts[&#x27;postal_code&#x27;].str.replace(&#x27; &#x27;, &#x27;&#x27;, regex=False)
+    activities[&#x27;postal_code&#x27;] = activities[&#x27;postal_code&#x27;].str.replace(&#x27; &#x27;, &#x27;&#x27;, regex=False)
+    for column in [&#x27;contact_date&#x27;, &#x27;window_end&#x27;]:
+        contacts[column] = pd.to_datetime(contacts[column])
+    activities[&#x27;activity_date&#x27;] = pd.to_datetime(activities[&#x27;activity_date&#x27;])
+    return contacts, activities</code></pre></figure><p>For callback reporting, several campaign-selection batches were combined, then matched against callback records. The inner join keeps callbacks belonging to the selected population:</p><figure class="code-example"><figcaption><strong>Combine selection batches and match callbacks</strong><span>Python · anonymised adaptation</span></figcaption><pre tabindex="0"><code>def match_selection(callbacks, batches):
+    selection = pd.concat(batches, ignore_index=True)
+    return callbacks.merge(selection, on=&#x27;account_id&#x27;, how=&#x27;inner&#x27;)</code></pre></figure><p>The response-analysis work also matched contact history, accounts, and activity records. Exploratory code compared identifier-based matching with postal-code/house-number matching. Those joins can produce several candidate events for one contact; later aggregation determines the reporting unit.</p></section>
+<section id="responses" class="article-section"><h2>3. Define response using event dates</h2><p>A later event becomes a response when it belongs to the matched record and falls between the contact date and the end of the reporting window. Separate flags describe response, approval, and completion. The code also calculates elapsed days and the value associated with a completed outcome.</p><figure class="code-example"><figcaption><strong>Create response and outcome measures</strong><span>Python · anonymised adaptation</span></figcaption><pre tabindex="0"><code>def add_response_flags(matched):
+    matched = matched.copy()
+    responded = (
+        matched[&#x27;activity_date&#x27;].ge(matched[&#x27;contact_date&#x27;])
+        &amp; matched[&#x27;activity_date&#x27;].le(matched[&#x27;window_end&#x27;])
+        &amp; matched[&#x27;activity_id&#x27;].notna()
+    )
+    approved = responded &amp; matched[&#x27;decision&#x27;].eq(&#x27;APPROVED&#x27;)
+    completed = responded &amp; matched[&#x27;status&#x27;].isin([&#x27;COMPLETED&#x27;, &#x27;FINALISED&#x27;])
+    matched[&#x27;responded&#x27;] = responded.astype(int)
+    matched[&#x27;approved&#x27;] = approved.astype(int)
+    matched[&#x27;completed&#x27;] = completed.astype(int)
+    matched[&#x27;response_days&#x27;] = np.where(
+        responded,
+        (matched[&#x27;activity_date&#x27;] - matched[&#x27;contact_date&#x27;]).dt.total_seconds() / 86400,
+        np.nan,
+    )
+    matched[&#x27;completed_value&#x27;] = np.where(completed, matched[&#x27;approved_value&#x27;], np.nan)
+    return matched</code></pre></figure><p>The inclusive date conditions preserve the original window logic. Generic decision and status values replace internal codes. A response flag is a reporting rule linking contact and activity; it does not establish that the contact caused the event.</p></section>
+<section id="summary" class="article-section"><h2>4. Aggregate at the right level</h2><p>A join can return multiple activity rows for one customer in one campaign. This simplified adaptation first produces one customer/campaign/channel row for each contact date. Taking the maximum of a 0/1 flag records whether that customer had the event, rather than counting every joined candidate.</p><figure class="code-example"><figcaption><strong>Consolidate customer/campaign rows</strong><span>Python · anonymised adaptation</span></figcaption><pre tabindex="0"><code>def customer_campaign_rows(matched):
+    return matched.groupby(
+        [&#x27;contact_date&#x27;, &#x27;campaign&#x27;, &#x27;channel&#x27;, &#x27;customer_id&#x27;],
+    ).agg({
+        &#x27;contacted&#x27;: &#x27;max&#x27;,
+        &#x27;responded&#x27;: &#x27;max&#x27;,
+        &#x27;approved&#x27;: &#x27;max&#x27;,
+        &#x27;completed&#x27;: &#x27;max&#x27;,
+        &#x27;completed_value&#x27;: &#x27;max&#x27;,
+    }).reset_index()</code></pre></figure><p>The next function adds those flags across the population. Response rate is responding customer/campaign rows divided by contacted customer/campaign rows. Year and month support recurring reports:</p><figure class="code-example"><figcaption><strong>Calculate campaign-level totals</strong><span>Python · anonymised adaptation</span></figcaption><pre tabindex="0"><code>def response_summary(customer_rows):
+    summary = customer_rows.groupby(
+        [&#x27;contact_date&#x27;, &#x27;campaign&#x27;, &#x27;channel&#x27;],
+    ).agg({
+        &#x27;contacted&#x27;: &#x27;sum&#x27;,
+        &#x27;responded&#x27;: &#x27;sum&#x27;,
+        &#x27;approved&#x27;: &#x27;sum&#x27;,
+        &#x27;completed&#x27;: &#x27;sum&#x27;,
+        &#x27;completed_value&#x27;: &#x27;sum&#x27;,
+    }).reset_index()
+    summary[&#x27;response_rate&#x27;] = summary[&#x27;responded&#x27;] / summary[&#x27;contacted&#x27;]
+    summary[&#x27;year&#x27;] = summary[&#x27;contact_date&#x27;].dt.year
+    summary[&#x27;month&#x27;] = summary[&#x27;contact_date&#x27;].dt.month
+    return summary</code></pre></figure><p>The original summaries also grouped by action, channel, and status. Related reports used distinct-customer and distinct-campaign counts for monthly charts. Counting customers, contacts, or joined events answers different questions; the report must specify which one it uses.</p><p>An overlap-correction function exists in the response repository, but its call is commented out in the main report. I therefore do not present automatic correction across overlapping campaigns as an active step in that script.</p></section>
+<section id="api" class="article-section"><h2>5. Analyse email-service data through an API</h2><p>A separate workflow added service data unavailable in the SQL tables. It used a SOAP client to request the campaign catalogue, retrieve tracking-link events, and read campaign reports. The code converted the service response into a DataFrame, then added dates and reporting periods.</p><p>The following examples retain the historical SOAP operations and field positions. The service name, account values, endpoint, and credentials are omitted. Authentication is supplied when calling the functions.</p><figure class="code-example"><figcaption><strong>Convert the campaign catalogue into a table</strong><span>Python · anonymised adaptation</span></figcaption><pre tabindex="0"><code>def campaign_catalog(client, authentication):
+    request = client.factory.create(&#x27;GetCampaignsReq&#x27;)
+    request.header = authentication
+    response = client.service.GetCampaigns(request)
+    return pd.DataFrame({
+        &#x27;campaign_id&#x27;: [item[0] for item in response.campaignTypeItems],
+        &#x27;campaign_name&#x27;: [item[1] for item in response.campaignTypeItems],
+        &#x27;sent_at&#x27;: [item[3] for item in response.campaignTypeItems],
+    })</code></pre></figure><figure class="code-example"><figcaption><strong>Request and total tracking-link hits</strong><span>Python · anonymised adaptation</span></figcaption><pre tabindex="0"><code>def tracking_hits(client, authentication, campaign_id):
+    request = client.factory.create(&#x27;GetCampaignTrackingLinksReq&#x27;)
+    request.header = authentication
+    request.campaignId = campaign_id
+    response = client.service.GetCampaignTrackingLinks(request)
+    return sum(item[3] for item in response.trackingLinkTypeItems)</code></pre></figure><figure class="code-example"><figcaption><strong>Enrich campaign rows with API results</strong><span>Python · anonymised adaptation</span></figcaption><pre tabindex="0"><code>def add_campaign_hits(campaigns, client, authentication):
+    campaigns = campaigns.copy()
+    campaigns[&#x27;tracking_hits&#x27;] = [
+        tracking_hits(client, authentication, campaign_id)
+        for campaign_id in campaigns[&#x27;campaign_id&#x27;]
+    ]
+    campaigns[&#x27;sent_at&#x27;] = pd.to_datetime(campaigns[&#x27;sent_at&#x27;])
+    campaigns[&#x27;year&#x27;] = campaigns[&#x27;sent_at&#x27;].dt.year
+    campaigns[&#x27;month&#x27;] = campaigns[&#x27;sent_at&#x27;].dt.month
+    return campaigns</code></pre></figure><p><code>tracking_hits()</code> totals the service’s link-hit field. This is an event count, which can include repeat interactions; it is not a count of unique responders or completed business outcomes. Campaign reports and address-history requests were also present in the source. Their fields need the service definition before assigning a business meaning.</p><p>The historical scripts included pauses between groups of requests. These examples show the request and transformation logic; they are not a claim that the archived API version has been tested against today’s service.</p></section>
+<section id="selection" class="article-section"><h2>6. Apply selection rules and return data to SQL</h2><p>Reporting and campaign preparation shared the same tools. A reminder workflow loaded a selection, joined exclusion and closed-account lists, kept eligible contactable records, then wrote the resulting table back to SQL and exported a CSV.</p><figure class="code-example"><figcaption><strong>Select records using joined exclusions</strong><span>Python · anonymised adaptation</span></figcaption><pre tabindex="0"><code>def reminder_selection(selection, exclusions, closed_accounts):
+    joined = selection.merge(exclusions, on=&#x27;customer_id&#x27;, how=&#x27;left&#x27;)
+    joined = joined.merge(closed_accounts, on=&#x27;customer_id&#x27;, how=&#x27;left&#x27;)
+    return joined.loc[
+        joined[&#x27;email_available&#x27;].eq(1)
+        &amp; joined[&#x27;excluded&#x27;].isna()
+        &amp; joined[&#x27;closed&#x27;].isna()
+    ].copy()</code></pre></figure><figure class="code-example"><figcaption><strong>Write the prepared selection to SQL and CSV</strong><span>Python · anonymised adaptation</span></figcaption><pre tabindex="0"><code>def save_selection(selection, engine, table_name, output_file):
+    selection.to_sql(table_name, con=engine, schema=&#x27;dbo&#x27;, index=False, if_exists=&#x27;replace&#x27;)
+    selection.to_csv(output_file, index=False, sep=&#x27;;&#x27;)</code></pre></figure><p><code>to_sql()</code> shows the return path from a Python table to a database table. The replacement behaviour reflects the historical script; the generic target name is supplied by the caller. Original delivery code also emailed an exported file. This portfolio example focuses on data preparation and reporting.</p></section>
+<section id="excel" class="article-section"><h2>7. Update the Excel report and export tables</h2><p>The original workflows opened an existing workbook and wrote the reporting table into its data sheet. This matters when people already use a template with formatting, charts, and slicers: refreshing its input data fits their existing reporting process.</p><p>This adaptation shows that Excel step directly with xlwings. It clears the previous data range, writes the new table, saves the output workbook, and closes the Excel session:</p><figure class="code-example"><figcaption><strong>Write into an existing Excel template</strong><span>Python · anonymised adaptation</span></figcaption><pre tabindex="0"><code>def write_excel_template(summary, template_file, output_file):
+    import xlwings as xw
+    app = xw.App(visible=False)
+    workbook = app.books.open(str(template_file))
+    sheet = workbook.sheets[&#x27;Data&#x27;]
+    sheet.range(&#x27;A1&#x27;).expand(&#x27;table&#x27;).clear_contents()
+    sheet.range(&#x27;A1&#x27;).options(index=False, header=True).value = summary
+    workbook.save(str(output_file))
+    workbook.close()
+    app.quit()</code></pre></figure><figure class="code-example"><figcaption><strong>Export CSV and the populated report</strong><span>Python · anonymised adaptation</span></figcaption><pre tabindex="0"><code>def export_report(summary, template_file, output_directory):
+    output_directory = Path(output_directory)
+    output_directory.mkdir(parents=True, exist_ok=True)
+    summary.to_csv(output_directory / &#x27;response_summary.csv&#x27;, index=False)
+    write_excel_template(
+        summary, template_file, output_directory / &#x27;response_report.xlsx&#x27;,
+    )</code></pre></figure><p>The paths are supplied to the function. The public example has no custom drive letters, shared-folder locations, staff names, or connection details. CSV keeps the summary available for further analysis; Excel provides the familiar report.</p><p>The wider reporting repository also built HTML line, histogram, and scatter charts with Bokeh, showing monthly customer counts, campaign counts, and outcome values. These were additional views of the reporting tables, not a separate source of business results.</p></section>
+<section id="example" class="article-section"><h2>A small report example</h2><p>The table below was generated by the anonymised Python functions using invented contact and activity records. One customer has multiple matching activity rows; consolidation keeps that customer’s response count at one. Another activity lies outside the response window and does not count as a response.</p><div class="article-table"><table><thead><tr><th>Campaign</th><th>Channel</th><th>Contacted</th><th>Responded</th><th>Response rate</th><th>Completed</th></tr></thead><tbody><tr><td>Campaign A</td><td>Email</td><td>4</td><td>2</td><td>50%</td><td>1</td></tr><tr><td>Campaign B</td><td>Phone</td><td>4</td><td>2</td><td>50%</td><td>1</td></tr></tbody></table></div><p><a href="assets/reporting/example_response_summary.csv" download>Download the illustrative CSV</a> · <a href="assets/reporting/workflow_examples.py" download>Download the anonymised Python examples</a> · <a href="assets/reporting/generate_example.py" download>Download the invented-data example</a>.</p><p>The verified demonstration covers table cleaning, joins, response-window calculations, and aggregation. Database, API, and desktop Excel functions require the caller’s own environment; they were not run against private systems for this portfolio.</p></section>
+<section id="experience" class="article-section"><h2>What this work demonstrates</h2><p>My work connected operational databases to reports people could use: extracting data with SQL, matching tables in Python, encoding business rules, querying a service API, and refreshing Excel outputs. Keeping these stages as small functions makes their inputs and calculations easier to follow.</p><p>Several historical scripts underpin this entry, including the main response report, its contact-history reporting and exploratory code, callback-selection matching, API reporting, reminder preparation, and SQL-table orchestration. Their separate responsibilities are shown here as a connected explanation; the public example is an anonymised adaptation, not an unchanged copy of one original script.</p><p>Related entries: <a href="sql-feature-engineering.html">SQL feature engineering</a> and <a href="banking-project.html">the campaign-response modelling project</a>.</p></section>
+</div></div></article></main><footer class="wrap"><span>Ruddi Rodriguez Garcia · Project portfolio</span><a href="#">Back to top ↑</a></footer></body></html>
