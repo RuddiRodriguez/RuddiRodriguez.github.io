@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Searching the vocabulary and the classifier together · Ruddi Rodriguez Garcia</title><meta name="description" content="From manually chosen settings to systematic searches over word groups, vocabulary size, and model parameters."><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=9"></head>
+<body><a class="skip" href="#main">Skip to content</a><header class="wrap"><a class="brand" href="index.html">RG<span>Ruddi Rodriguez Garcia</span></a><nav aria-label="Main navigation"><a href="index.html">Projects</a><a href="https://github.com/RuddiRodriguez">GitHub ↗</a></nav></header>
+<main id="main"><div class="wrap page-back"><a href="index.html">← All project entries</a></div><article class="wrap blog-article"><div class="article-header"><p class="eyebrow">MY FIRST NLP PROJECT / 06 OF 08 / MODEL SEARCHES</p><h1>Searching the vocabulary and the classifier together</h1><p class="article-lead">From manually chosen settings to systematic searches over word groups, vocabulary size, and model parameters.</p><p class="article-byline">By Ruddi Rodriguez Garcia · Original project development: 2019 · Retrospective article</p></div>
+<nav class="part-links" aria-label="Articles in this NLP project"><span>My first NLP project · Article series</span><a href="nlp-seniority.html">01 · The question</a><a href="nlp-data-collection.html">02 · Collecting data</a><a href="nlp-text-features.html">03 · Text features</a><a href="nlp-first-models.html">04 · First models</a><a href="nlp-cross-validation.html">05 · Cross-validation</a><a href="nlp-model-search.html" aria-current="page">06 · Model searches</a><a href="nlp-pipelines.html">07 · Full pipelines</a><a href="nlp-results.html">08 · Results and reflection</a></nav><div class="article-layout"><nav class="article-toc" aria-label="In this article"><span>IN THIS ARTICLE</span><a href="#start">The classifier settings were only part of the experiment</a><a href="#first">From chosen values to a grid of alternatives</a><a href="#joint">Searching the representation and classifier together</a><a href="#bayes">A second joint search: TF-IDF and Naive Bayes</a><a href="#next">The repeated pieces needed a home</a></nav><div class="article-body"><section id="start" class="article-section"><h2>The classifier settings were only part of the experiment</h2>
+<p>The experiments raised choices on both sides of the model: how many terms to keep, whether to use individual words or phrases, and which classifier settings to choose. The search scripts make those choices explicit.</p>
+<p>The archive includes an exhaustive search over logistic-regression settings, a sampled search, then a pipeline search that includes word extraction. A separate TF-IDF/Naive Bayes experiment searches its representation and smoothing together.</p>
+</section>
+<section id="first" class="article-section"><h2>From chosen values to a grid of alternatives</h2>
+<figure class="code-example"><figcaption><strong>The early logistic-regression grid</strong><span>Original source excerpt · formatting adapted; comments shortened · <a href="https://github.com/RuddiRodriguez/Linkedin_analysis_NLP/blob/6b4c1d221916b8fa6f5b8b9bebcd6ced8a155222/Linkedin_logistic_model_CountVectorizer_parameter_optimization.py">Read the original source ↗</a></span></figcaption><pre tabindex="0"><code>pipeline = Pipeline([(&#x27;clf&#x27;, LogisticRegression(solver=&#x27;saga&#x27;,multi_class=&#x27;multinomial&#x27;,class_weight=&#x27;balanced&#x27;))])
+
+parameters = {&#x27;clf__penalty&#x27;: [&#x27;l1&#x27;, &#x27;l2&#x27;],
+                  &#x27;clf__C&#x27;: [0.001, .009, 0.01, .09, 1,2, 5, 10, 25, 30, 40]}
+
+scoring = [&#x27;precision_macro&#x27;, &#x27;recall_macro&#x27;, &#x27;f1_macro&#x27;, &#x27;balanced_accuracy&#x27;]
+
+grid_search = GridSearchCV(pipeline, parameters, cv=5,
+        n_jobs=-1, verbose=1, scoring=scoring, refit=&#x27;recall_macro&#x27;)</code></pre></figure>
+<p>This compares two penalties and eleven C values: 22 combinations, each evaluated through five folds. L1 and L2 restrict coefficients differently; C controls the strength of that restriction. Balanced class weights change the contribution of classes during fitting.</p>
+<p>The vocabulary is still fitted outside this particular search. It is an intermediate step in the story, before the joint pipeline experiment. The sampled variant tries ten settings instead of every combination.</p>
+</section>
+<section id="joint" class="article-section"><h2>Searching the representation and classifier together</h2>
+<figure class="code-example"><figcaption><strong>Word groups, vocabulary size, and logistic settings</strong><span>Original source excerpt · formatting adapted; comments shortened · <a href="https://github.com/RuddiRodriguez/Linkedin_analysis_NLP/blob/6b4c1d221916b8fa6f5b8b9bebcd6ced8a155222/Linkedin_logistic_model_CountVectorizer_parameter_optimization_random_search_pipeline.py">Read the original source ↗</a></span></figcaption><pre tabindex="0"><code>param_grid = {&#x27;vectorized__ngram_range&#x27;: [(1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (2, 3)],
+                  &#x27;vectorized__max_features&#x27;: [300, 1000, 5000, 8000, 9000],
+                  &#x27;clf__penalty&#x27;: [&#x27;l1&#x27;, &#x27;l2&#x27;],
+                  &#x27;clf__C&#x27;: [1, 2, 5, 10, 25, 30, 40]}
+
+scoring = [&#x27;precision_macro&#x27;, &#x27;recall_macro&#x27;, &#x27;f1_macro&#x27;,
+               &#x27;balanced_accuracy&#x27;]
+
+grid_search = RandomizedSearchCV(pipeline, param_grid, cv=10, n_iter=10,
+        n_jobs=-1, verbose=1, scoring=scoring, refit=&#x27;recall_macro&#x27;)</code></pre></figure>
+<p>The vectorized__ prefix refers to the CountVectorizer step; clf__ refers to the classifier. Word-group ranges include single words through longer phrases, and max_features limits the retained vocabulary. The candidate space contains 420 combinations.</p>
+<p>RandomizedSearchCV samples ten candidates and evaluates each over ten folds: 100 candidate fits, followed by the selected candidate’s refit. The full vocabulary-and-classifier pipeline is trained separately inside each fold. This is a larger methodological change than merely trying another value of C.</p>
+<p>The script prints the selected settings and evaluates on the separate text file. Its returned predictions and search object make it possible to inspect the result, although the archive does not preserve a complete search-results table for every run.</p>
+</section>
+<section id="bayes" class="article-section"><h2>A second joint search: TF-IDF and Naive Bayes</h2>
+<figure class="code-example"><figcaption><strong>The Naive Bayes representation and search</strong><span>Original source excerpt · formatting adapted; comments shortened · <a href="https://github.com/RuddiRodriguez/Linkedin_analysis_NLP/blob/6b4c1d221916b8fa6f5b8b9bebcd6ced8a155222/Linkedin_Naives_Bayes_model_TfidfVectorizer_parameter_optimization_random_search_pipeline.py">Read the original source ↗</a></span></figcaption><pre tabindex="0"><code>pipeline = Pipeline([(&#x27;vectorizer&#x27;,TfidfVectorizer(stop_words = stop,token_pattern=r&#x27;\w{1,}&#x27;)),
+        (&#x27;clf&#x27;, MultinomialNB(class_prior=None,fit_prior=False))])
+
+param_grid={&#x27;vectorizer__ngram_range&#x27;: [(1,1),(1,2) ,(2,2)],
+                &#x27;vectorizer__max_features&#x27;:[ 9000, 10000],
+                &#x27;clf__alpha&#x27;: np.linspace(0.5, 1.5, 6, 7)
+                }
+
+scoring = [&#x27;precision_macro&#x27;, &#x27;recall_macro&#x27;, &#x27;f1_macro&#x27;,
+               &#x27;balanced_accuracy&#x27;]
+
+grid_search = GridSearchCV(pipeline, param_grid, cv=5,
+        n_jobs=-1, verbose=1, scoring=scoring, refit=&#x27;recall_macro&#x27;)</code></pre></figure>
+<p>This file’s name mentions random search, but its active call is GridSearchCV. It compares three word-group ranges, two vocabulary limits, and six alpha values—36 candidates evaluated through five folds. fit_prior=False gives the classes equal prior probabilities instead of estimating those priors from their row counts.</p>
+<p>The original np.linspace call supplies an integer as its fourth argument, the endpoint flag. The displayed source is retained as written; it generates six values between 0.5 and 1.5 with a truthy endpoint setting. This is one reason to read the code rather than infer the procedure from a filename.</p>
+</section>
+<section id="next" class="article-section"><h2>The repeated pieces needed a home</h2>
+<p>The searches connected word extraction and fitting, but scripts still repeated preparation and reporting. The next stage brought those pieces into <a href="nlp-pipelines.html">a shared text workflow</a>, so the fitted process could accept descriptions and carry them through to predictions.</p>
+</section>
+<nav class="part-links" aria-label="Continue reading"><span>Continue the story</span><a href="nlp-cross-validation.html">← Cross-validation</a><a href="nlp-pipelines.html">Next: Full pipelines →</a></nav>
+<p class="source-note">Based on the original project code and records. Historical results and retrospective checks are identified in the text. Personal file paths are omitted from examples.</p>
+<nav class="part-links" aria-label="Articles in this NLP project"><span>My first NLP project · Article series</span><a href="nlp-seniority.html">01 · The question</a><a href="nlp-data-collection.html">02 · Collecting data</a><a href="nlp-text-features.html">03 · Text features</a><a href="nlp-first-models.html">04 · First models</a><a href="nlp-cross-validation.html">05 · Cross-validation</a><a href="nlp-model-search.html" aria-current="page">06 · Model searches</a><a href="nlp-pipelines.html">07 · Full pipelines</a><a href="nlp-results.html">08 · Results and reflection</a></nav></div></div></article></main><footer class="wrap"><span>Ruddi Rodriguez Garcia · Project portfolio</span><a href="#">Back to top ↑</a></footer></body></html>

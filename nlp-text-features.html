@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Turning job descriptions into something a model could learn from · Ruddi Rodriguez Garcia</title><meta name="description" content="Cleaning text, counting words, and exploring word combinations and TF-IDF before those steps became a pipeline."><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=9"></head>
+<body><a class="skip" href="#main">Skip to content</a><header class="wrap"><a class="brand" href="index.html">RG<span>Ruddi Rodriguez Garcia</span></a><nav aria-label="Main navigation"><a href="index.html">Projects</a><a href="https://github.com/RuddiRodriguez">GitHub ↗</a></nav></header>
+<main id="main"><div class="wrap page-back"><a href="index.html">← All project entries</a></div><article class="wrap blog-article"><div class="article-header"><p class="eyebrow">MY FIRST NLP PROJECT / 03 OF 08 / TEXT FEATURES</p><h1>Turning job descriptions into something a model could learn from</h1><p class="article-lead">Cleaning text, counting words, and exploring word combinations and TF-IDF before those steps became a pipeline.</p><p class="article-byline">By Ruddi Rodriguez Garcia · Original project development: 2019 · Retrospective article</p></div>
+<nav class="part-links" aria-label="Articles in this NLP project"><span>My first NLP project · Article series</span><a href="nlp-seniority.html">01 · The question</a><a href="nlp-data-collection.html">02 · Collecting data</a><a href="nlp-text-features.html" aria-current="page">03 · Text features</a><a href="nlp-first-models.html">04 · First models</a><a href="nlp-cross-validation.html">05 · Cross-validation</a><a href="nlp-model-search.html">06 · Model searches</a><a href="nlp-pipelines.html">07 · Full pipelines</a><a href="nlp-results.html">08 · Results and reflection</a></nav><div class="article-layout"><nav class="article-toc" aria-label="In this article"><span>IN THIS ARTICLE</span><a href="#start">Descriptions were sentences; the model needed numbers</a><a href="#clean">Making word forms more consistent</a><a href="#counts">Counting words and short phrases</a><a href="#weight">When a frequent word is not very informative</a><a href="#words">Looking at the language before interpreting the model</a></nav><div class="article-body"><section id="start" class="article-section"><h2>Descriptions were sentences; the model needed numbers</h2>
+<p>The first representation treated a description as a collection of words or short word groups. A column represented a word or phrase, and a row represented a description. Its values recorded how often those terms appeared, or their TF-IDF weights.</p>
+<p>That made the representation easy to inspect. It also left decisions: whether letter case should matter, which common words to remove, whether word variations should share a form, and how many words to consider together.</p>
+</section>
+<section id="clean" class="article-section"><h2>Making word forms more consistent</h2>
+<figure class="code-example"><figcaption><strong>The early cleaning function</strong><span>Original source excerpt · formatting adapted; comments shortened · <a href="https://github.com/RuddiRodriguez/Linkedin_analysis_NLP/blob/6b4c1d221916b8fa6f5b8b9bebcd6ced8a155222/module_data.py">Read the original source ↗</a></span></figcaption><pre tabindex="0"><code>def cleaning_text_regular_exp(df, text_field):
+    df[text_field] = df[text_field].str.replace(r&#x27;[^\w\s]&#x27;, &quot; &quot;)
+    df[text_field] = df[text_field].str.replace(r&quot;:&quot;, &quot;&quot;)
+    df[text_field] = df[text_field].str.replace(
+        r&quot;[^A-Za-z0-9(),!?@\&#x27;\`\&quot;\_\n]&quot;, &quot; &quot;)
+    df[text_field] = df[text_field].str.replace(r&quot;\d&quot;, &quot; &quot;)
+    df[text_field] = df[text_field].str.lower()
+    return df</code></pre></figure>
+<p>The function replaces punctuation, removes digits, and lowercases the text. “Python” and “python” can then contribute to the same term. This is the historical function: its regular-expression replacements reflect the pandas behaviour expected by the original environment.</p>
+<p>Removing digits is a decision worth revisiting for this problem. Numbers in experience requirements may carry information about seniority. I keep that original choice visible rather than silently replacing the cleaning method.</p>
+<figure class="code-example"><figcaption><strong>Remove common words, then reduce word variations</strong><span>Original source excerpt · formatting adapted; comments shortened · <a href="https://github.com/RuddiRodriguez/Linkedin_analysis_NLP/blob/6b4c1d221916b8fa6f5b8b9bebcd6ced8a155222/module_data.py">Read the original source ↗</a></span></figcaption><pre tabindex="0"><code>def removing_stop_words(data):
+    nltk.download(&quot;stopwords&quot;)
+    stop = stopwords.words(&#x27;english&#x27;)
+    data[&#x27;token_no_stop_words&#x27;] = data[&#x27;Description&#x27;].apply(
+        lambda x: &quot; &quot;.join([item for item in x.split() if item not in stop]))
+    return (data)
+
+def lemmatizing(data, colum_name):
+    nltk.download(&#x27;wordnet&#x27;)
+    lemmatizer = WordNetLemmatizer()
+    data[&#x27;lemmatizing&#x27;] = data[colum_name].apply(
+        lambda x: &quot; &quot;.join([lemmatizer.lemmatize(word) for word in x.split()]))
+    return data</code></pre></figure>
+<p>Stopword removal filters common English words. Lemmatisation uses WordNet to reduce some word variations to a shared form. The early count-based classifier applies it to the text after stopword removal. A stemming helper also exists in the repository, but the displayed baseline follows the lemmatisation path.</p>
+<p>For a simple invented example, “Models and analyses” becomes lowercase text; removing “and” leaves “models analyses”; noun lemmatisation can give “model analysis.” This illustrates the operations, not a quote from the collected advertisements.</p>
+</section>
+<section id="counts" class="article-section"><h2>Counting words and short phrases</h2>
+<figure class="code-example"><figcaption><strong>Fit a vocabulary and create the count matrix</strong><span>Original source excerpt · formatting adapted; comments shortened · <a href="https://github.com/RuddiRodriguez/Linkedin_analysis_NLP/blob/6b4c1d221916b8fa6f5b8b9bebcd6ced8a155222/module_model.py">Read the original source ↗</a></span></figcaption><pre tabindex="0"><code>def vectorizer(data, range_d):
+    count_vectorizer = CountVectorizer(ngram_range=range_d)
+    counts = count_vectorizer.fit_transform(data)
+
+    return counts, count_vectorizer</code></pre></figure>
+<p>fit_transform learns the vocabulary from the supplied descriptions and builds their count table. The fitted vectorizer can then transform another description using the same columns. It does not create a new vocabulary for each prediction.</p>
+<p>An ngram_range of (1, 1) uses single words. (1, 2) includes single words and adjacent two-word phrases. “machine learning” can therefore become a feature alongside “machine” and “learning.” The early logistic-regression script uses (1, 2), while other experiments use different ranges.</p>
+</section>
+<section id="weight" class="article-section"><h2>When a frequent word is not very informative</h2>
+<p>TF-IDF adds another view. A term receives weight according to how often it occurs in the description and how broadly it appears across the fitted collection. A word appearing in almost every advertisement may be less useful for separating levels than a more distinctive term.</p>
+<p>The early TF-IDF script and later Naive Bayes search explore that representation. The final shared text pipeline uses CountVectorizer followed by TfidfTransformer. The early helper accepts several arguments but only forwards stop_words when constructing its vectorizer; the later search exposes vocabulary choices directly.</p>
+<figure class="code-example"><figcaption><strong>The later count-and-weight combination</strong><span>Two steps from the later shared pipeline · <a href="https://github.com/RuddiRodriguez/Linkedin_analysis_NLP/blob/6b4c1d221916b8fa6f5b8b9bebcd6ced8a155222/module_model.py">Read the original source ↗</a></span></figcaption><pre tabindex="0"><code>(&#x27;vectorized&#x27;, CountVectorizer()),
+(&#x27;tfidf&#x27;, TfidfTransformer()),</code></pre></figure>
+</section>
+<section id="words" class="article-section"><h2>Looking at the language before interpreting the model</h2>
+<div class="report-gallery"><figure><a href="assets/nlp/poster-word-clouds.png"><img src="assets/nlp/poster-word-clouds.png" alt="Associate and Mid-Senior Level word clouds from the original NLP poster" loading="lazy"></a><figcaption>Original poster excerpt: Associate and Mid-Senior Level word clouds. These are exploratory frequency views, not classifier feature-importance results.</figcaption></figure></div><p>The word-frequency script and poster gave me another way to look at the corpus. Many terms overlap between levels: tools and subject vocabulary do not belong to only one seniority category. The classifier has to learn combinations and weights rather than rely on one obvious keyword.</p>
+<p>The figures remain historical exploratory material. Reading a large word in a cloud is different from measuring how strongly a fitted model uses it. With the representation in place, the next article follows <a href="nlp-first-models.html">the first classifiers</a>.</p>
+</section>
+<nav class="part-links" aria-label="Continue reading"><span>Continue the story</span><a href="nlp-data-collection.html">← Collecting data</a><a href="nlp-first-models.html">Next: First models →</a></nav>
+<p class="source-note">Based on the original project code and records. Historical results and retrospective checks are identified in the text. Personal file paths are omitted from examples.</p>
+<nav class="part-links" aria-label="Articles in this NLP project"><span>My first NLP project · Article series</span><a href="nlp-seniority.html">01 · The question</a><a href="nlp-data-collection.html">02 · Collecting data</a><a href="nlp-text-features.html" aria-current="page">03 · Text features</a><a href="nlp-first-models.html">04 · First models</a><a href="nlp-cross-validation.html">05 · Cross-validation</a><a href="nlp-model-search.html">06 · Model searches</a><a href="nlp-pipelines.html">07 · Full pipelines</a><a href="nlp-results.html">08 · Results and reflection</a></nav></div></div></article></main><footer class="wrap"><span>Ruddi Rodriguez Garcia · Project portfolio</span><a href="#">Back to top ↑</a></footer></body></html>

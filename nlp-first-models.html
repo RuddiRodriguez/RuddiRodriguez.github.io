@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Getting the first seniority classifiers working · Ruddi Rodriguez Garcia</title><meta name="description" content="Logistic regression and Naive Bayes gave me predictions. Understanding their mistakes became the next part of the project."><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=9"></head>
+<body><a class="skip" href="#main">Skip to content</a><header class="wrap"><a class="brand" href="index.html">RG<span>Ruddi Rodriguez Garcia</span></a><nav aria-label="Main navigation"><a href="index.html">Projects</a><a href="https://github.com/RuddiRodriguez">GitHub ↗</a></nav></header>
+<main id="main"><div class="wrap page-back"><a href="index.html">← All project entries</a></div><article class="wrap blog-article"><div class="article-header"><p class="eyebrow">MY FIRST NLP PROJECT / 04 OF 08 / FIRST MODELS</p><h1>Getting the first seniority classifiers working</h1><p class="article-lead">Logistic regression and Naive Bayes gave me predictions. Understanding their mistakes became the next part of the project.</p><p class="article-byline">By Ruddi Rodriguez Garcia · Original project development: 2019 · Retrospective article</p></div>
+<nav class="part-links" aria-label="Articles in this NLP project"><span>My first NLP project · Article series</span><a href="nlp-seniority.html">01 · The question</a><a href="nlp-data-collection.html">02 · Collecting data</a><a href="nlp-text-features.html">03 · Text features</a><a href="nlp-first-models.html" aria-current="page">04 · First models</a><a href="nlp-cross-validation.html">05 · Cross-validation</a><a href="nlp-model-search.html">06 · Model searches</a><a href="nlp-pipelines.html">07 · Full pipelines</a><a href="nlp-results.html">08 · Results and reflection</a></nav><div class="article-layout"><nav class="article-toc" aria-label="In this article"><span>IN THIS ARTICLE</span><a href="#start">I could finally fit a classifier</a><a href="#split">Separating the descriptions from their answers</a><a href="#logistic">Learning from single words and pairs of words</a><a href="#bayes">Trying a different way to learn from word counts</a><a href="#errors">Predictions gave me another question</a></nav><div class="article-body"><section id="start" class="article-section"><h2>I could finally fit a classifier</h2>
+<p>Once a description had become a word-count row, I could pair it with its advertised seniority label and fit a model. Logistic regression was one of the first approaches. Despite its name, it is used here for classification: learning weights that help distinguish the six levels.</p>
+<p>The early scripts separate the text preparation, vectorizer, classifier, and reporting. That keeps the initial experiment visible: prepare descriptions, hold back some rows, fit on the remaining rows, and compare the predictions with their labels.</p>
+</section>
+<section id="split" class="article-section"><h2>Separating the descriptions from their answers</h2>
+<figure class="code-example"><figcaption><strong>The early train/test split</strong><span>Original source excerpt · formatting adapted; comments shortened · <a href="https://github.com/RuddiRodriguez/Linkedin_analysis_NLP/blob/6b4c1d221916b8fa6f5b8b9bebcd6ced8a155222/module_data.py">Read the original source ↗</a></span></figcaption><pre tabindex="0"><code>def training_model_with_split(data, test_size, features_col, labels_col):
+
+    list_features = data[features_col].tolist()
+    list_labels = data[labels_col].tolist()
+
+    X_train, X_test, y_train, y_test = train_test_split(list_features, list_labels, test_size=test_size,
+        random_state=40)
+    return X_train, X_test, y_train, y_test</code></pre></figure>
+<p>The outcome column becomes y; the prepared description column becomes X. The caller chooses the test proportion, and random_state=40 repeats the split for the same rows. The count-based experiment reserves 20%. This particular helper does not stratify the split or group duplicate descriptions together.</p>
+<p>The later scripts also support a separate CSV for evaluation. A separate filename is useful organisationally, but the description overlap has to be checked to know how independent its examples are.</p>
+</section>
+<section id="logistic" class="article-section"><h2>Learning from single words and pairs of words</h2>
+<figure class="code-example"><figcaption><strong>Fit on training text, predict using the same vocabulary</strong><span>Original source excerpt · formatting adapted; comments shortened · <a href="https://github.com/RuddiRodriguez/Linkedin_analysis_NLP/blob/6b4c1d221916b8fa6f5b8b9bebcd6ced8a155222/Linkedin_logistic_model_CountVectorizer.py">Read the original source ↗</a></span></figcaption><pre tabindex="0"><code>def ML_analysis(X_train, X_test, y_train, y_test, data):
+
+    X_train_counts, count_vectorizer = mo.vectorizer(
+        X_train,(1,2))
+
+    X_test_counts = count_vectorizer.transform(X_test)
+
+    logreg = LogisticRegression(C=1)
+
+    predicted_level = mo.train_model(
+        logreg, X_train_counts, y_train, X_test_counts)
+
+    print_summary(y_test, predicted_level,
+                  data, &quot;Cat_level&quot;)
+
+    plot.plot_confusion_matrix(y_test, predicted_level,
+        classes=data.groupby(
+        &#x27;Cat_level&#x27;).count().index,
+        title=&#x27;Confusion matrix, without normalization&#x27;)</code></pre></figure>
+<p>The first call fits the vocabulary on training text. transform maps the test text into that vocabulary. LogisticRegression(C=1) then learns relationships between those features and the seniority labels. predict applies the fitted classifier to test rows.</p>
+<p>C controls how strongly the coefficient sizes are restricted: changing it changes how freely the model can fit the training examples. At this stage, the displayed value is chosen directly. Later searches compare alternatives.</p>
+</section>
+<section id="bayes" class="article-section"><h2>Trying a different way to learn from word counts</h2>
+<figure class="code-example"><figcaption><strong>The count-based Naive Bayes experiment</strong><span>Original source excerpt · formatting adapted; comments shortened · <a href="https://github.com/RuddiRodriguez/Linkedin_analysis_NLP/blob/6b4c1d221916b8fa6f5b8b9bebcd6ced8a155222/Linkedin_Naives_Bayes_model.py">Read the original source ↗</a></span></figcaption><pre tabindex="0"><code>NB = MultinomialNB(alpha=0.5)
+predicted_level = mo.train_model(
+    NB, X_train_counts, y_train, X_test_counts
+)</code></pre></figure>
+<p>Multinomial Naive Bayes uses the term frequencies associated with each class. Its simplifying assumption makes it a useful text baseline; alpha smooths the estimated term frequencies so unseen or rare terms do not dominate through zero counts.</p>
+<p>Both approaches receive a numeric representation of the descriptions. Changing the classifier does not remove the need to inspect the data, labels, and feature construction. The Naive Bayes file also contains later references to an undefined prediction variable; the excerpt shows the fitting step, not a claim that the whole archived script runs unchanged today.</p>
+</section>
+<section id="errors" class="article-section"><h2>Predictions gave me another question</h2>
+<figure class="code-example"><figcaption><strong>Fit and predict, then report precision and recall</strong><span>Original source excerpt · formatting adapted; comments shortened · <a href="https://github.com/RuddiRodriguez/Linkedin_analysis_NLP/blob/6b4c1d221916b8fa6f5b8b9bebcd6ced8a155222/module_model.py">Read the original source ↗</a></span></figcaption><pre tabindex="0"><code>def train_model(classifier, X_train, y_train, X_test, is_neural_net=False):
+    classifier.fit(X_train, y_train)
+    predictions = classifier.predict(X_test)
+    return predictions
+
+def print_summary(y_test, y_predicted,data,colum_name):
+
+    print(metrics.classification_report(y_test, y_predicted, target_names=data.groupby(colum_name).count().index))</code></pre></figure>
+<p>A classification report separates precision—how often predictions for a level are right—from recall—how much of that level the model recovers. A confusion matrix then shows which other levels receive its mistakes.</p>
+<p>A single split gives one result. It does not show how much the comparison changes when different examples are held back. That is the next turn in the project: <a href="nlp-cross-validation.html">cross-validation</a>.</p>
+</section>
+<nav class="part-links" aria-label="Continue reading"><span>Continue the story</span><a href="nlp-text-features.html">← Text features</a><a href="nlp-cross-validation.html">Next: Cross-validation →</a></nav>
+<p class="source-note">Based on the original project code and records. Historical results and retrospective checks are identified in the text. Personal file paths are omitted from examples.</p>
+<nav class="part-links" aria-label="Articles in this NLP project"><span>My first NLP project · Article series</span><a href="nlp-seniority.html">01 · The question</a><a href="nlp-data-collection.html">02 · Collecting data</a><a href="nlp-text-features.html">03 · Text features</a><a href="nlp-first-models.html" aria-current="page">04 · First models</a><a href="nlp-cross-validation.html">05 · Cross-validation</a><a href="nlp-model-search.html">06 · Model searches</a><a href="nlp-pipelines.html">07 · Full pipelines</a><a href="nlp-results.html">08 · Results and reflection</a></nav></div></div></article></main><footer class="wrap"><span>Ruddi Rodriguez Garcia · Project portfolio</span><a href="#">Back to top ↑</a></footer></body></html>

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Bringing the text workflow into one pipeline · Ruddi Rodriguez Garcia</title><meta name="description" content="The later version connected cleaning, lemmatisation, word extraction, weighting, and classification in one fitted process."><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=9"></head>
+<body><a class="skip" href="#main">Skip to content</a><header class="wrap"><a class="brand" href="index.html">RG<span>Ruddi Rodriguez Garcia</span></a><nav aria-label="Main navigation"><a href="index.html">Projects</a><a href="https://github.com/RuddiRodriguez">GitHub ↗</a></nav></header>
+<main id="main"><div class="wrap page-back"><a href="index.html">← All project entries</a></div><article class="wrap blog-article"><div class="article-header"><p class="eyebrow">MY FIRST NLP PROJECT / 07 OF 08 / FULL PIPELINES</p><h1>Bringing the text workflow into one pipeline</h1><p class="article-lead">The later version connected cleaning, lemmatisation, word extraction, weighting, and classification in one fitted process.</p><p class="article-byline">By Ruddi Rodriguez Garcia · Original project development: 2019 · Retrospective article</p></div>
+<nav class="part-links" aria-label="Articles in this NLP project"><span>My first NLP project · Article series</span><a href="nlp-seniority.html">01 · The question</a><a href="nlp-data-collection.html">02 · Collecting data</a><a href="nlp-text-features.html">03 · Text features</a><a href="nlp-first-models.html">04 · First models</a><a href="nlp-cross-validation.html">05 · Cross-validation</a><a href="nlp-model-search.html">06 · Model searches</a><a href="nlp-pipelines.html" aria-current="page">07 · Full pipelines</a><a href="nlp-results.html">08 · Results and reflection</a></nav><div class="article-layout"><nav class="article-toc" aria-label="In this article"><span>IN THIS ARTICLE</span><a href="#start">The process had become more than one classifier</a><a href="#transformers">Teaching the pipeline how to handle a description</a><a href="#chain">One fitted path from descriptions to predictions</a><a href="#poster">The poster captured this connected view</a><a href="#reflection">The clearer structure also made unfinished parts visible</a></nav><div class="article-body"><section id="start" class="article-section"><h2>The process had become more than one classifier</h2>
+<p>The early experiment was a sequence of separate calls. The later version made that sequence part of one object: clean the description, remove common words, lemmatise, extract its word features, apply TF-IDF, and pass it to a classifier.</p>
+<p>This is the stage I remember reaching as I learned about pipelines. The repository records custom text transformers in late August, lemmatisation added to the shared pipeline on September 3, and TF-IDF added afterward on the same date. In November, the entry script accepts a classifier argument and calls it with a random forest.</p>
+</section>
+<section id="transformers" class="article-section"><h2>Teaching the pipeline how to handle a description</h2>
+<figure class="code-example"><figcaption><strong>Selecting the description column</strong><span>Original source excerpt · formatting adapted; comments shortened · <a href="https://github.com/RuddiRodriguez/Linkedin_analysis_NLP/blob/6b4c1d221916b8fa6f5b8b9bebcd6ced8a155222/module_transformers.py">Read the original source ↗</a></span></figcaption><pre tabindex="0"><code>class FeatureSelector(BaseEstimator, TransformerMixin):
+    def __init__(self, feature_names):
+        self.feature_names = feature_names
+
+
+    def fit(self, X, y=None):
+        return self
+
+
+    def transform(self, X, y=None):
+        return X[
+            self.feature_names].tolist()</code></pre></figure>
+<p>The earlier steps operate on a table. FeatureSelector extracts Description as a list of strings for the vectorizer. Its fit returns the transformer itself; transform performs the operation. That shared interface allows each preparation step to participate in the pipeline.</p>
+<figure class="code-example"><figcaption><strong>Lemmatisation as a pipeline step</strong><span>Original source excerpt · formatting adapted; comments shortened · <a href="https://github.com/RuddiRodriguez/Linkedin_analysis_NLP/blob/6b4c1d221916b8fa6f5b8b9bebcd6ced8a155222/module_transformers.py">Read the original source ↗</a></span></figcaption><pre tabindex="0"><code>class LemmatizeWord(BaseEstimator, TransformerMixin):
+    def __init__(self, col_name):
+        self.col_name = col_name
+        self.lemmatizers = WordNetLemmatizer()
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X, y=None):
+
+        X[self.col_name] = X[self.col_name].apply(
+            lambda x: &quot; &quot;.join([self.lemmatizers.lemmatize(item) for item in x.split()]))
+        return X</code></pre></figure>
+<p>The lemmatiser uses WordNet to transform the words in the selected column. It does not learn a new vocabulary from the training rows. CountVectorizer and TfidfTransformer, later in the chain, do learn from those rows. This difference helps explain what fitting the full object actually does.</p>
+</section>
+<section id="chain" class="article-section"><h2>One fitted path from descriptions to predictions</h2>
+<figure class="code-example"><figcaption><strong>The shared training and prediction function</strong><span>Original source excerpt · formatting adapted; comments shortened · <a href="https://github.com/RuddiRodriguez/Linkedin_analysis_NLP/blob/6b4c1d221916b8fa6f5b8b9bebcd6ced8a155222/module_model.py">Read the original source ↗</a></span></figcaption><pre tabindex="0"><code>def ML_analysis_separated_data(training_cleaned_data, cleaned_test_data ,column_target,classifier,label=&quot;Level&quot;):
+
+    X_train = training_cleaned_data.drop(column_target, axis=1)
+    y_train = training_cleaned_data[column_target].values
+
+    X_test = cleaned_test_data.drop(column_target, axis=1)
+    y_test = cleaned_test_data[column_target].values
+
+
+    full_pipeline = Pipeline(steps=[(&#x27;pre_regular_exp&#x27;, CleaningTextRegularExp(&#x27;Description&#x27;)),
+        (&#x27;pre_stop_words&#x27;, removing_stop_words(&#x27;Description&#x27;,&#x27;english&#x27;)),
+        (&#x27;pre_lemmatize&#x27;, LemmatizeWord(&#x27;Description&#x27;)),
+        (&#x27;Pre_selector&#x27;, FeatureSelector(&#x27;Description&#x27;)),
+        (&#x27;vectorized&#x27;, CountVectorizer()),
+        (&#x27;tfidf&#x27;, TfidfTransformer()),
+        ])
+
+
+
+    full_pipeline_m = Pipeline(steps=[(&#x27;full_pipeline&#x27;, full_pipeline),
+
+        (&#x27;model&#x27;, classifier())])
+
+    full_pipeline_m.fit(X_train, y_train)
+    y_pred = full_pipeline_m.predict(X_test)
+    print_summary(y_test, y_pred,
+                  training_cleaned_data, label)
+    plot.plot_confusion_matrix(y_test, y_pred,
+        classes=training_cleaned_data.groupby(
+        &#x27;Cat_level&#x27;).count().index,
+        title=&#x27;Confusion matrix, without normalization&#x27;)</code></pre></figure>
+<p>The first pipeline holds the text transformations. The outer pipeline appends classifier(), so the same text handling can feed different classifiers. fit learns the vectorizer vocabulary, TF-IDF weights, and model from the training table. predict sends another table through those fitted steps.</p>
+<p>The selector takes only Description into word extraction. Type_of_Job and the retained readable category label are present in the surrounding table but are not model features in this chain. Level is removed from X and passed separately as y.</p>
+<p>This later function fits on one supplied training table and predicts another; it is not itself a parameter search. The earlier search scripts show cross-validation and optimisation, while this function shows the connected end-to-end handling.</p>
+</section>
+<section id="poster" class="article-section"><h2>The poster captured this connected view</h2>
+<div class="report-gallery"><figure><a href="assets/nlp/poster-training.png"><img src="assets/nlp/poster-training.png" alt="Training and prediction flow excerpt from the original poster" loading="lazy"></a><figcaption>Original poster excerpt. Training uses descriptions and known tags; prediction reuses text preparation and feature extraction before producing a label.</figcaption></figure></div><p>The two paths in the poster capture the distinction between learning and prediction. The training path uses known labels to fit the classifier. The prediction path applies the fitted handling to text whose label is being predicted.</p>
+<p>The later entry script supplies the classifier to the shared function. Logistic regression and Naive Bayes are available in the imports; its main call uses RandomForestClassifier. The saved figures document comparisons among those three approaches.</p><figure class="code-example"><figcaption><strong>The later entry point selects a random forest</strong><span>Original source excerpt · formatting adapted · <a href="https://github.com/RuddiRodriguez/Linkedin_analysis_NLP/blob/6b4c1d221916b8fa6f5b8b9bebcd6ced8a155222/Linkedin_pipelines.py">Read the original source ↗</a></span></figcaption><pre tabindex="0"><code>from sklearn.ensemble import RandomForestClassifier
+
+loading_data(
+    'demodata_training_full_v1.csv',
+    'demodata.csv',
+    RandomForestClassifier,
+)</code></pre></figure>
+<p>A random forest learns many decision trees from the numeric word features and combines their class estimates. Each tree makes a sequence of splits, allowing a different kind of relationship from logistic regression’s weighted terms or Naive Bayes’ term-frequency probabilities. Passing the classifier into the shared workflow lets me change that learning step while retaining the text preparation.</p>
+</section>
+<section id="reflection" class="article-section"><h2>The clearer structure also made unfinished parts visible</h2>
+<p>Keeping the preparation together helps reveal where assumptions still sit outside it. The entry script encodes training and test labels separately. That produces compatible codes here because both files contain the same six categories; a future dataset missing a category would need one shared fitted label mapping.</p>
+<p>Another transformer experiment, module_transformer_1.py, contains a recursive preprocessor call. The final entry uses module_transformers.py instead. I keep that experimental detour in the history, rather than present every archived file as the chosen implementation.</p>
+<p>The next chapter returns to the original poster and reads <a href="nlp-results.html">what the predictions actually showed</a>.</p>
+</section>
+<nav class="part-links" aria-label="Continue reading"><span>Continue the story</span><a href="nlp-model-search.html">← Model searches</a><a href="nlp-results.html">Next: Results and reflection →</a></nav>
+<p class="source-note">Based on the original project code and records. Historical results and retrospective checks are identified in the text. Personal file paths are omitted from examples.</p>
+<nav class="part-links" aria-label="Articles in this NLP project"><span>My first NLP project · Article series</span><a href="nlp-seniority.html">01 · The question</a><a href="nlp-data-collection.html">02 · Collecting data</a><a href="nlp-text-features.html">03 · Text features</a><a href="nlp-first-models.html">04 · First models</a><a href="nlp-cross-validation.html">05 · Cross-validation</a><a href="nlp-model-search.html">06 · Model searches</a><a href="nlp-pipelines.html" aria-current="page">07 · Full pipelines</a><a href="nlp-results.html">08 · Results and reflection</a></nav></div></div></article></main><footer class="wrap"><span>Ruddi Rodriguez Garcia · Project portfolio</span><a href="#">Back to top ↑</a></footer></body></html>

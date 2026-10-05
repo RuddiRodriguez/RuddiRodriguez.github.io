@@ -1,0 +1,5 @@
+file,rows,labelled_rows,unique_labelled_descriptions,repeated_labelled_rows,missing_labelled_descriptions
+demodata_training_full_v1.csv,5166,4573,183,4390,0
+demodata.csv,1500,1325,87,1238,0
+demodatest.csv,1225,1066,109,957,0
+demodatareal2.csv,1225,1037,93,944,0

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Building the dataset, one job advertisement at a time · Ruddi Rodriguez Garcia</title><meta name="description" content="The first model needed examples. I collected descriptions and their advertised seniority labels, then brought the batches together."><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=9"></head>
+<body><a class="skip" href="#main">Skip to content</a><header class="wrap"><a class="brand" href="index.html">RG<span>Ruddi Rodriguez Garcia</span></a><nav aria-label="Main navigation"><a href="index.html">Projects</a><a href="https://github.com/RuddiRodriguez">GitHub ↗</a></nav></header>
+<main id="main"><div class="wrap page-back"><a href="index.html">← All project entries</a></div><article class="wrap blog-article"><div class="article-header"><p class="eyebrow">MY FIRST NLP PROJECT / 02 OF 08 / COLLECTING DATA</p><h1>Building the dataset, one job advertisement at a time</h1><p class="article-lead">The first model needed examples. I collected descriptions and their advertised seniority labels, then brought the batches together.</p><p class="article-byline">By Ruddi Rodriguez Garcia · Original project development: 2019 · Retrospective article</p></div>
+<nav class="part-links" aria-label="Articles in this NLP project"><span>My first NLP project · Article series</span><a href="nlp-seniority.html">01 · The question</a><a href="nlp-data-collection.html" aria-current="page">02 · Collecting data</a><a href="nlp-text-features.html">03 · Text features</a><a href="nlp-first-models.html">04 · First models</a><a href="nlp-cross-validation.html">05 · Cross-validation</a><a href="nlp-model-search.html">06 · Model searches</a><a href="nlp-pipelines.html">07 · Full pipelines</a><a href="nlp-results.html">08 · Results and reflection</a></nav><div class="article-layout"><nav class="article-toc" aria-label="In this article"><span>IN THIS ARTICLE</span><a href="#start">Before a model, I needed examples</a><a href="#collect">From result pages to individual descriptions</a><a href="#batches">Bringing the collection batches together</a><a href="#identity">A collected row is not always a different advertisement</a><a href="#next">The next question was how to represent the text</a></nav><div class="article-body"><section id="start" class="article-section"><h2>Before a model, I needed examples</h2>
+<p>The seniority labels were already attached to the job advertisements. That gave me a practical starting point: collect the description and its label together, save the records, and use them for supervised learning—a model trained on examples with known answers.</p>
+<p>The collection script searched for data-science jobs. It first read search-result pages to find job identifiers, then visited each job page to extract its description and criteria. Collection and classification were separate stages; the model did not fetch advertisements while making a prediction.</p>
+</section>
+<section id="collect" class="article-section"><h2>From result pages to individual descriptions</h2>
+<figure class="code-example"><figcaption><strong>Collect identifiers from search-result pages</strong><span>Historical extraction logic · formatting adapted · <a href="https://github.com/RuddiRodriguez/Linkedin_analysis_NLP/blob/6b4c1d221916b8fa6f5b8b9bebcd6ced8a155222/Data/data_scraping.py">Read the original source ↗</a></span></figcaption><pre tabindex="0"><code>idnumber = []
+for i in range(10, 500, 10):
+    page = &#x27;https://www.linkedin.com/jobs/search/?keywords=data+science&amp;start=&#x27; + str(i)
+    web_result = requests.get(page).text
+    soup = BeautifulSoup(web_result, &#x27;lxml&#x27;)
+    idnumber.extend([
+        item[&#x27;data-id&#x27;] for item in soup.find_all(attrs={&#x27;data-id&#x27;: True})
+    ])
+idnumber = [item for item in idnumber if item.isdigit()]</code></pre></figure>
+<p>The page offset changes by ten on each request. The collected identifiers become the input to the second loop. Filtering to numeric identifiers removes values that do not look like job IDs; it does not remove repeated IDs.</p>
+<p>The next step extracts the text and the first two job criteria into a table:</p>
+<figure class="code-example"><figcaption><strong>Store description and advertised criteria</strong><span>Historical extraction logic · generic output path · <a href="https://github.com/RuddiRodriguez/Linkedin_analysis_NLP/blob/6b4c1d221916b8fa6f5b8b9bebcd6ced8a155222/Data/data_scraping.py">Read the original source ↗</a></span></figcaption><pre tabindex="0"><code>data = pd.DataFrame(columns=[&#x27;Level&#x27;, &#x27;Type_of_Job&#x27;, &#x27;Description&#x27;])
+for row_number, job_id in enumerate(idnumber, start=1):
+    page = &#x27;https://www.linkedin.com/jobs/view/&#x27; + job_id + &#x27;/&#x27;
+    soup = BeautifulSoup(requests.get(page).text, &#x27;lxml&#x27;)
+    description = [item.text for item in soup.find_all(
+        &#x27;div&#x27;, {&#x27;class&#x27;: &#x27;description__text description__text--rich&#x27;}
+    )]
+    criteria = [item.text for item in soup.find_all(
+        &#x27;span&#x27;, {&#x27;class&#x27;: &#x27;job-criteria__text job-criteria__text--criteria&#x27;}
+    )]
+    data.loc[row_number] = criteria[:2] + description
+
+data.to_csv(&#x27;data/collected_jobs.csv&#x27;, index=False)</code></pre></figure>
+<p>Those selectors describe the page structure used by the archived scraper. They show how I collected the dataset in that project; I have not run the scraper against the current site. The saved CSV is the starting point for the analysis below.</p>
+</section>
+<section id="batches" class="article-section"><h2>Bringing the collection batches together</h2>
+<p>The repository contains thirteen collection batches and a notebook that appends them. The original script uses an older pandas append operation and a personal file path. This short adaptation keeps the same combine-and-save idea with a supplied folder:</p>
+<figure class="code-example"><figcaption><strong>Combine the thirteen batches</strong><span>Modern pandas adaptation · generic path · <a href="https://github.com/RuddiRodriguez/Linkedin_analysis_NLP/blob/6b4c1d221916b8fa6f5b8b9bebcd6ced8a155222/Data/merged_data_web_scraping.py">Read the original source ↗</a></span></figcaption><pre tabindex="0"><code>from pathlib import Path
+
+folder = Path(&#x27;data&#x27;)
+batches = [
+    pd.read_csv(folder / f&#x27;demodata_training_{number}.csv&#x27;)
+    for number in range(13)
+]
+collected = pd.concat(batches, ignore_index=True)
+collected.to_csv(folder / &#x27;combined_jobs.csv&#x27;, index=False)</code></pre></figure>
+<p>The combined archive contains 5,166 rows. Removing “Not Applicable” leaves 4,573 labelled rows. The advertised categories are unevenly represented:</p>
+<div class="article-table"><table><thead><tr><th scope="col">Advertised level</th><th scope="col">Labelled training rows</th></tr></thead><tbody><tr><td>Associate</td><td>325</td></tr><tr><td>Director</td><td>886</td></tr><tr><td>Entry level</td><td>988</td></tr><tr><td>Executive</td><td>189</td></tr><tr><td>Internship</td><td>649</td></tr><tr><td>Mid-Senior level</td><td>1,536</td></tr></tbody></table></div></section>
+<section id="identity" class="article-section"><h2>A collected row is not always a different advertisement</h2>
+<p>Looking back at the files, the labelled training rows contain only 183 distinct exact description strings. The separate evaluation file contains 1,325 labelled rows and 87 distinct descriptions. Ten exact description strings occur in both files.</p>
+<p>Those are counts from the archived files, not a new scrape. Repetition matters because another row can carry text the model has already seen. A random row split can put copies of the same description on both sides of the evaluation.</p>
+<p>The archive shows the repetition but does not establish the origin of every repeated row. I would keep a stable advertisement identifier and collection date when rebuilding the dataset, then define how repeated or reposted descriptions belong in the split. The <a href="nlp-results.html#data">final chapter</a> returns to what this means for the saved results.</p>
+<p><a href="assets/nlp/dataset-audit.csv" download>Download the aggregate dataset audit</a>. No collected job descriptions are republished in this table.</p>
+</section>
+<section id="next" class="article-section"><h2>The next question was how to represent the text</h2>
+<p>The data table gave me descriptions and advertised answers. The classifier still needed numbers it could learn from. That led to <a href="nlp-text-features.html">cleaning the text and building word-based features</a>.</p>
+</section>
+<nav class="part-links" aria-label="Continue reading"><span>Continue the story</span><a href="nlp-seniority.html">← The question</a><a href="nlp-text-features.html">Next: Text features →</a></nav>
+<p class="source-note">Based on the original project code and records. Historical results and retrospective checks are identified in the text. Personal file paths are omitted from examples.</p>
+<nav class="part-links" aria-label="Articles in this NLP project"><span>My first NLP project · Article series</span><a href="nlp-seniority.html">01 · The question</a><a href="nlp-data-collection.html" aria-current="page">02 · Collecting data</a><a href="nlp-text-features.html">03 · Text features</a><a href="nlp-first-models.html">04 · First models</a><a href="nlp-cross-validation.html">05 · Cross-validation</a><a href="nlp-model-search.html">06 · Model searches</a><a href="nlp-pipelines.html">07 · Full pipelines</a><a href="nlp-results.html">08 · Results and reflection</a></nav></div></div></article></main><footer class="wrap"><span>Ruddi Rodriguez Garcia · Project portfolio</span><a href="#">Back to top ↑</a></footer></body></html>

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>One split was not the whole story · Ruddi Rodriguez Garcia</title><meta name="description" content="How I moved toward cross-validation—and why the text representation had to become part of that evaluation."><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=9"></head>
+<body><a class="skip" href="#main">Skip to content</a><header class="wrap"><a class="brand" href="index.html">RG<span>Ruddi Rodriguez Garcia</span></a><nav aria-label="Main navigation"><a href="index.html">Projects</a><a href="https://github.com/RuddiRodriguez">GitHub ↗</a></nav></header>
+<main id="main"><div class="wrap page-back"><a href="index.html">← All project entries</a></div><article class="wrap blog-article"><div class="article-header"><p class="eyebrow">MY FIRST NLP PROJECT / 05 OF 08 / CROSS-VALIDATION</p><h1>One split was not the whole story</h1><p class="article-lead">How I moved toward cross-validation—and why the text representation had to become part of that evaluation.</p><p class="article-byline">By Ruddi Rodriguez Garcia · Original project development: 2019 · Retrospective article</p></div>
+<nav class="part-links" aria-label="Articles in this NLP project"><span>My first NLP project · Article series</span><a href="nlp-seniority.html">01 · The question</a><a href="nlp-data-collection.html">02 · Collecting data</a><a href="nlp-text-features.html">03 · Text features</a><a href="nlp-first-models.html">04 · First models</a><a href="nlp-cross-validation.html" aria-current="page">05 · Cross-validation</a><a href="nlp-model-search.html">06 · Model searches</a><a href="nlp-pipelines.html">07 · Full pipelines</a><a href="nlp-results.html">08 · Results and reflection</a></nav><div class="article-layout"><nav class="article-toc" aria-label="In this article"><span>IN THIS ARTICLE</span><a href="#start">A result depended on which rows I held back</a><a href="#early">The first repeated evaluation</a><a href="#vocabulary">Word extraction had to travel with the model</a><a href="#question">Which score should guide the comparison?</a><a href="#next">Now I could compare the settings systematically</a></nav><div class="article-body"><section id="start" class="article-section"><h2>A result depended on which rows I held back</h2>
+<p>My first experiments could fit a model and print a report. The next question was how to compare results across more than one division of the examples. Cross-validation became part of that progression.</p>
+<p>Instead of reserving one group once, cross-validation divides the data into several folds. The classifier trains on the other folds and predicts the held-back fold, then repeats until each fold has served as validation data. It gives a view across those repeated fits.</p>
+</section>
+<section id="early" class="article-section"><h2>The first repeated evaluation</h2>
+<figure class="code-example"><figcaption><strong>Three-fold predictions in the early script</strong><span>Original source excerpt · formatting adapted; comments shortened · <a href="https://github.com/RuddiRodriguez/Linkedin_analysis_NLP/blob/6b4c1d221916b8fa6f5b8b9bebcd6ced8a155222/Linkedin_logistic_model_CountVectorizer_cross_vali.py">Read the original source ↗</a></span></figcaption><pre tabindex="0"><code>def ML_analysis(X_train, y_train, data, colum_name):
+
+    X_train_counts, count_vectorizer = mo.vectorizer(
+        X_train, (1, 1))
+
+    logreg = LogisticRegression(
+        )
+    predicted = cross_val_predict(logreg, X_train_counts, y_train, cv=3)
+    print(metrics.accuracy_score(y_train, predicted))
+    print(metrics.classification_report(y_train, predicted))</code></pre></figure>
+<p>cross_val_predict returns a held-back-fold prediction for each row. The script compares those predictions with the known labels and prints accuracy and a per-class report. Here cv=3 asks for three folds.</p>
+<p>There is an important detail in the order: the vocabulary is fitted before cross-validation. The classifier is held back from each validation fold, but the vocabulary has already seen the full supplied collection. This evaluates only part of the learning procedure independently.</p>
+</section>
+<section id="vocabulary" class="article-section"><h2>Word extraction had to travel with the model</h2>
+<p>The vocabulary is learned from data too. It determines which word columns exist, and TF-IDF also learns collection-level frequencies. For a comparison of the complete procedure, those steps need to learn from each fold’s training text.</p>
+<p>The later search puts CountVectorizer and the classifier in the same Pipeline. Cross-validation then fits that combined object inside each fold:</p>
+<figure class="code-example"><figcaption><strong>The later search pipeline</strong><span>Original source excerpt · formatting adapted; comments shortened · <a href="https://github.com/RuddiRodriguez/Linkedin_analysis_NLP/blob/6b4c1d221916b8fa6f5b8b9bebcd6ced8a155222/Linkedin_logistic_model_CountVectorizer_parameter_optimization_random_search_pipeline.py">Read the original source ↗</a></span></figcaption><pre tabindex="0"><code>pipeline = Pipeline([(&#x27;vectorized&#x27;, CountVectorizer()), (&#x27;clf&#x27;,
+        LogisticRegression(solver=&#x27;saga&#x27;,
+        multi_class=&#x27;multinomial&#x27;,
+        class_weight=&#x27;balanced&#x27;))])</code></pre></figure>
+<p>This changed the unit being evaluated. Each candidate became “learn the word representation, then fit this classifier,” rather than “fit a classifier on a matrix built beforehand.” The pipeline also gives prediction the fitted representation used during training.</p>
+<p>This search pipeline still receives text prepared outside the search. The later shared workflow moves the cleaning operations into its connected process as well. Those are related changes, but they happen at different points in the archive.</p>
+</section>
+<section id="question" class="article-section"><h2>Which score should guide the comparison?</h2>
+<p>The searches record macro precision, macro recall, macro F1, and balanced accuracy. Macro means averaging the class-level scores equally. This matters because Mid-Senior level has far more rows than Executive or Associate.</p>
+<p>The refit choice is recall_macro: select the candidate with the strongest average recall across the six levels, then fit it on the supplied training data. That makes the selection rule visible rather than leaving the meaning of “best” implicit.</p>
+<p>Cross-validation does not remove repeated descriptions. Copies split across folds still weaken the independence of the evaluation. The closing article keeps that data question alongside the historical results.</p>
+</section>
+<section id="next" class="article-section"><h2>Now I could compare the settings systematically</h2>
+<p>Once the word representation belonged to the model being evaluated, vocabulary choices could be searched alongside classifier settings. The <a href="nlp-model-search.html">next chapter</a> follows the move from fixed choices to those joint experiments.</p>
+</section>
+<nav class="part-links" aria-label="Continue reading"><span>Continue the story</span><a href="nlp-first-models.html">← First models</a><a href="nlp-model-search.html">Next: Model searches →</a></nav>
+<p class="source-note">Based on the original project code and records. Historical results and retrospective checks are identified in the text. Personal file paths are omitted from examples.</p>
+<nav class="part-links" aria-label="Articles in this NLP project"><span>My first NLP project · Article series</span><a href="nlp-seniority.html">01 · The question</a><a href="nlp-data-collection.html">02 · Collecting data</a><a href="nlp-text-features.html">03 · Text features</a><a href="nlp-first-models.html">04 · First models</a><a href="nlp-cross-validation.html" aria-current="page">05 · Cross-validation</a><a href="nlp-model-search.html">06 · Model searches</a><a href="nlp-pipelines.html">07 · Full pipelines</a><a href="nlp-results.html">08 · Results and reflection</a></nav></div></div></article></main><footer class="wrap"><span>Ruddi Rodriguez Garcia · Project portfolio</span><a href="#">Back to top ↑</a></footer></body></html>
