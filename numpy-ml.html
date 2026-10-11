@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Machine learning with NumPy · Ruddi Rodriguez Garcia</title>
+<meta name="description" content="A growing collection of machine learning algorithms implemented from scratch with NumPy, starting with linear regression and gradient descent.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=9">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="wrap"><a class="brand" href="index.html">RG<span>Ruddi Rodriguez Garcia</span></a><nav aria-label="Main navigation"><a href="index.html#entries">Projects</a><a href="https://github.com/RuddiRodriguez">GitHub ↗</a></nav></header>
+<main id="main">
+<div class="wrap page-back"><a href="index.html#entries">← All project entries</a></div>
+<article class="wrap blog-article">
+<div class="article-header"><p class="eyebrow">MACHINE LEARNING / NUMPY / ONGOING EXPLORATION</p><h1>Machine learning, one algorithm at a time.</h1><p class="article-lead">I am building small examples with NumPy to understand what happens inside a learning algorithm. This page will grow as I add more algorithms and experiments.</p><p class="article-byline">By Ruddi Rodriguez Garcia · Python and NumPy · Ongoing project</p></div>
+<div class="article-layout">
+<nav class="article-toc" aria-label="In this article"><span>IN THIS ARTICLE</span><a href="#idea">The idea</a><a href="#items">Algorithms and experiments</a><a href="#gradient-descent">01 / Gradient descent</a><a href="#growing">As the project grows</a><a href="#code">Explore the code</a></nav>
+<div class="article-body">
+<section id="idea" class="article-section"><h2>Make the learning steps visible</h2><p>The idea is to explore different machine learning algorithms by writing their calculations directly with NumPy. I want to see how a prediction is made, how its error is measured, and how the model changes to improve the next prediction.</p><p>Each example starts small so the connection between the maths and the code stays easy to follow. NumPy handles the numerical calculations. Matplotlib draws the results; the learning itself is written in Python and NumPy.</p></section>
+<section id="items" class="article-section"><h2>Algorithms and experiments</h2><p>This is a growing collection. Each implemented item will have its own explanation and link to the code.</p><a class="entry-card" href="#gradient-descent"><span>01 / IMPLEMENTED</span><h2>Linear regression with gradient descent</h2><p>Fit a straight line by repeatedly adjusting its slope and intercept.</p><strong>Explore this item ↓</strong></a><p>More items will appear here as I add them to the repository.</p></section>
+<section id="gradient-descent" class="article-section"><h2>01 / Learning a straight line</h2><p>The first example uses six illustrative pairs of study hours and test scores. The model predicts a score by multiplying the hours by a slope and adding an intercept. Both values start at zero.</p><p>At each step, the script compares predictions with the example scores. It calculates how the slope and intercept should change, then updates them using a fixed learning rate. The mean squared error measures how far the predictions are from the example values.</p><figure class="code-example"><figcaption><strong>Predict, calculate the adjustment, and update</strong><span>Python and NumPy · excerpt from the current example</span></figcaption><pre tabindex="0"><code>y_pred = w * x + b
+error = y - y_pred
+
+dw = (-2/len(x)) * np.sum(x * error)
+db = (-2/len(x)) * np.sum(error)
+
+w -= learning_rate * dw
+b -= learning_rate * db</code></pre></figure><p>The script measures the error again after each update. It stops when the change in error is smaller than the chosen tolerance, or when it reaches the iteration limit. Finally, it prints the fitted values and plots the line beside the data.</p><p>This example explores how the updates work and how the stopping rule behaves. The small dataset is illustrative; it does not establish a real relationship between studying and test performance.</p><p><a href="https://github.com/RuddiRodriguez/numpy_ml/blob/main/src/gadient_descent.py">Read the full gradient descent example on GitHub →</a></p></section>
+<section id="growing" class="article-section"><h2>A project that stays open</h2><p>I will add different algorithms and experiments over time. Each new item can explain the question it explores, the calculations behind it, the code, and what I learn from the result.</p><p>The list above starts with the current implementation and leaves room for more. Future items will be added as they are written.</p></section>
+<section id="code" class="article-section"><h2>Explore or run the code</h2><p>The public repository contains the examples and setup instructions. Start with the README, then run the current script to see the training error and fitted line.</p><p><a href="https://github.com/RuddiRodriguez/numpy_ml">Open the NumPy ML repository →</a> · <a href="https://github.com/RuddiRodriguez/numpy_ml#readme">Read setup instructions →</a></p></section>
+</div></div></article></main>
+<footer class="wrap"><span>Ruddi Rodriguez Garcia · Project portfolio</span><a href="#">Back to top ↑</a></footer>
+</body></html>
