@@ -14,18 +14,61 @@
 <article class="wrap blog-article">
 <div class="article-header"><p class="eyebrow">MACHINE LEARNING / NUMPY / ONGOING EXPLORATION</p><h1>Machine learning, one algorithm at a time.</h1><p class="article-lead">I am building small examples with NumPy to understand what happens inside a learning algorithm. This page will grow as I add more algorithms and experiments.</p><p class="article-byline">By Ruddi Rodriguez Garcia · Python and NumPy · Ongoing project</p></div>
 <div class="article-layout">
-<nav class="article-toc" aria-label="In this article"><span>IN THIS ARTICLE</span><a href="#idea">The idea</a><a href="#items">Algorithms and experiments</a><a href="#gradient-descent">01 / Gradient descent</a><a href="#growing">As the project grows</a><a href="#code">Explore the code</a></nav>
+<nav class="article-toc" aria-label="In this article"><span>IN THIS ARTICLE</span><a href="#idea">The idea</a><a href="#items">Algorithms and experiments</a><a href="#gradient-descent">01 / Gradient descent</a><a href="#gradient-formulas">From formulas to code</a><a href="#growing">As the project grows</a><a href="#code">Explore the code</a></nav>
 <div class="article-body">
 <section id="idea" class="article-section"><h2>Make the learning steps visible</h2><p>The idea is to explore different machine learning algorithms by writing their calculations directly with NumPy. I want to see how a prediction is made, how its error is measured, and how the model changes to improve the next prediction.</p><p>Each example starts small so the connection between the maths and the code stays easy to follow. NumPy handles the numerical calculations. Matplotlib draws the results; the learning itself is written in Python and NumPy.</p></section>
 <section id="items" class="article-section"><h2>Algorithms and experiments</h2><p>This is a growing collection. Each implemented item will have its own explanation and link to the code.</p><a class="entry-card" href="#gradient-descent"><span>01 / IMPLEMENTED</span><h2>Linear regression with gradient descent</h2><p>Fit a straight line by repeatedly adjusting its slope and intercept.</p><strong>Explore this item ↓</strong></a><p>More items will appear here as I add them to the repository.</p></section>
-<section id="gradient-descent" class="article-section"><h2>01 / Learning a straight line</h2><p>The first example uses six illustrative pairs of study hours and test scores. The model predicts a score by multiplying the hours by a slope and adding an intercept. Both values start at zero.</p><p>At each step, the script compares predictions with the example scores. It calculates how the slope and intercept should change, then updates them using a fixed learning rate. The mean squared error measures how far the predictions are from the example values.</p><figure class="code-example"><figcaption><strong>Predict, calculate the adjustment, and update</strong><span>Python and NumPy · excerpt from the current example</span></figcaption><pre tabindex="0"><code>y_pred = w * x + b
+<section id="gradient-descent" class="article-section"><h2>01 / Learning a straight line</h2><p>The first example uses six illustrative pairs of study hours and test scores. The model predicts a score by multiplying the hours by a slope and adding an intercept. Both values start at zero.</p><p>To understand the update, I start with the equation of a straight line and work through the derivatives. A derivative tells us how the error changes when we slightly change one model parameter.</p>
+<h3 id="gradient-formulas">From the familiar line equation to the code</h3>
+<p><strong>1. Write the prediction.</strong> For observation <code>i</code>, the line predicts <code>ŷᵢ = w xᵢ + b</code>. Here, <code>xᵢ</code> is the input, <code>yᵢ</code> is the observed score, <code>w</code> is the slope, and <code>b</code> is the intercept. The hat in <code>ŷᵢ</code> means “predicted”. There are <code>n</code> observations.</p>
+<p><strong>2. Define the error we want to minimise.</strong> The code uses the observed value minus the prediction: <code>eᵢ = yᵢ − ŷᵢ</code>. Square each error and average across all observations. This gives the mean squared error, written as <code>L</code>:</p>
+<figure class="code-example"><figcaption><strong>The loss function</strong><span>Σ means add the terms for all observations, from i = 1 to n.</span></figcaption><pre tabindex="0"><code>L(w, b) = (1/n) Σ eᵢ²
+        = (1/n) Σ [yᵢ − (w xᵢ + b)]²</code></pre></figure>
+<p>Squaring prevents positive and negative errors from cancelling and gives larger errors more weight. Dividing by <code>n</code> makes this an average.</p>
+<p><strong>3. Differentiate with respect to the slope.</strong> We change <code>w</code> while holding <code>b</code> fixed. This is a partial derivative, written <code>∂L/∂w</code>. The chain rule says: differentiate the outside square, then multiply by the derivative of the error inside it.</p>
+<figure class="code-example"><figcaption><strong>Where the slope gradient comes from</strong><span>The observed values and inputs are fixed while we adjust w.</span></figcaption><pre tabindex="0"><code>eᵢ = yᵢ − w xᵢ − b
+∂eᵢ/∂w = −xᵢ
+
+∂(eᵢ²)/∂w = 2eᵢ × (−xᵢ)
+           = −2xᵢeᵢ
+
+∂L/∂w = (1/n) Σ (−2xᵢeᵢ)
+       = (−2/n) Σ xᵢeᵢ</code></pre></figure>
+<p>The <code>2</code> comes from differentiating a square. The minus sign comes from subtracting the prediction in our definition of error. The <code>xᵢ</code> appears because changing the slope changes each prediction in proportion to its input.</p>
+<p><strong>4. Differentiate with respect to the intercept.</strong> Now change <code>b</code> while holding <code>w</code> fixed. Increasing the intercept by one increases every prediction by one, so the derivative of the error is <code>−1</code>:</p>
+<figure class="code-example"><figcaption><strong>Where the intercept gradient comes from</strong><span>The same chain rule, with −1 in place of −xᵢ.</span></figcaption><pre tabindex="0"><code>∂eᵢ/∂b = −1
+
+∂(eᵢ²)/∂b = 2eᵢ × (−1)
+           = −2eᵢ
+
+∂L/∂b = (1/n) Σ (−2eᵢ)
+       = (−2/n) Σ eᵢ</code></pre></figure>
+<p><strong>5. Translate the sums into NumPy.</strong> The arrays contain all observations. <code>x * error</code> multiplies each input by its corresponding error, <code>np.sum</code> adds the terms, and <code>len(x)</code> supplies <code>n</code>. The code names the two derivatives <code>dw</code> and <code>db</code>:</p>
+<figure class="code-example"><figcaption><strong>The formulas become these expressions</strong><span>Python and NumPy · excerpt from the current example</span></figcaption><pre tabindex="0"><code>y_pred = w * x + b
 error = y - y_pred
 
+# ∂L/∂w = (−2/n) Σ xᵢeᵢ
 dw = (-2/len(x)) * np.sum(x * error)
-db = (-2/len(x)) * np.sum(error)
+
+# ∂L/∂b = (−2/n) Σ eᵢ
+db = (-2/len(x)) * np.sum(error)</code></pre></figure>
+<p>Some explanations define the error as prediction minus observed value. With that convention, the gradients are written with <code>+2/n</code>. Both give the same derivatives when the error definition and sign are used consistently. This loss uses <code>1/n</code>; a loss defined with <code>1/(2n)</code> would cancel the factor of two.</p>
+<p><strong>6. Take a small step downhill.</strong> The two derivatives together form the gradient. They point towards increasing loss locally, so gradient descent subtracts them. The learning rate, written <code>α</code>, controls the step size:</p>
+<figure class="code-example"><figcaption><strong>From the update rule to Python</strong><span>Both gradients are calculated using the same current values of w and b.</span></figcaption><pre tabindex="0"><code>w_new = w − α × ∂L/∂w
+b_new = b − α × ∂L/∂b
 
 w -= learning_rate * dw
-b -= learning_rate * db</code></pre></figure><p>The script measures the error again after each update. It stops when the change in error is smaller than the chosen tolerance, or when it reaches the iteration limit. Finally, it prints the fitted values and plots the line beside the data.</p><p>This example explores how the updates work and how the stopping rule behaves. The small dataset is illustrative; it does not establish a real relationship between studying and test performance.</p><p><a href="https://github.com/RuddiRodriguez/numpy_ml/blob/main/src/gadient_descent.py">Read the full gradient descent example on GitHub →</a></p></section>
+b -= learning_rate * db</code></pre></figure>
+<p>A positive derivative makes the corresponding parameter decrease; a negative derivative makes it increase. Small enough steps move downhill, but an overly large learning rate can overshoot.</p>
+<h3>The first update, using the actual example</h3>
+<p>Initially, <code>w = 0</code> and <code>b = 0</code>, so every prediction is zero and the errors equal the observed scores. With six observations, <code>Σ xᵢeᵢ = 142.9</code> and <code>Σ eᵢ = 34.1</code>:</p>
+<figure class="code-example"><figcaption><strong>One complete learning step</strong><span>Using the script’s learning rate of 0.01; rounded values shown.</span></figcaption><pre tabindex="0"><code>dw = (−2/6) × 142.9 = −47.6333
+db = (−2/6) × 34.1  ≈ −11.3667
+
+w_new = 0 − 0.01 × (−47.6333)    ≈ 0.476333
+b_new = 0 − 0.01 × (−11.3667) ≈ 0.113667</code></pre></figure>
+<p>The line moves upwards from its initial zero predictions. For <code>x = 1</code>, its new prediction is approximately <code>0.59</code>. Across all six observations, the mean squared error drops from approximately <code>37.6183</code> to <code>17.4701</code>. The next iteration repeats the same calculations using the updated line.</p>
+<p>The script measures the error again after each update. It stops when the change in error is smaller than the chosen tolerance, or when it reaches the iteration limit. Finally, it prints the fitted values and plots the line beside the data.</p><p>This example explores how the updates work and how the stopping rule behaves. The small dataset is illustrative; it does not establish a real relationship between studying and test performance.</p><p><a href="https://github.com/RuddiRodriguez/numpy_ml/blob/main/src/gadient_descent.py">Read the full gradient descent example on GitHub →</a></p></section>
 <section id="growing" class="article-section"><h2>A project that stays open</h2><p>I will add different algorithms and experiments over time. Each new item can explain the question it explores, the calculations behind it, the code, and what I learn from the result.</p><p>The list above starts with the current implementation and leaves room for more. Future items will be added as they are written.</p></section>
 <section id="code" class="article-section"><h2>Explore or run the code</h2><p>The public repository contains the examples and setup instructions. Start with the README, then run the current script to see the training error and fitted line.</p><p><a href="https://github.com/RuddiRodriguez/numpy_ml">Open the NumPy ML repository →</a> · <a href="https://github.com/RuddiRodriguez/numpy_ml#readme">Read setup instructions →</a></p></section>
 </div></div></article></main>
