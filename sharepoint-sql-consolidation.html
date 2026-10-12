@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>From SharePoint files to one SQL table · Ruddi Rodriguez Garcia</title>
+<meta name="description" content="A Python workflow that downloads a SharePoint CSV, combines it with historical SQL records, and refreshes an Azure SQL table. Anonymised code explains the main steps and their limits.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=9">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="wrap"><a class="brand" href="index.html">RG<span>Ruddi Rodriguez Garcia</span></a><nav aria-label="Main navigation"><a href="index.html#entries">Projects</a><a href="https://github.com/RuddiRodriguez">GitHub ↗</a></nav></header>
+<main id="main"><div class="wrap page-back"><a href="index.html#entries">← All project entries</a></div>
+<article class="wrap blog-article">
+<div class="article-header"><p class="eyebrow">DATA INTEGRATION / PYTHON / SHAREPOINT / AZURE SQL</p><h1>From SharePoint files<br>to one SQL table.</h1><p class="article-lead">I built a Python workflow that brings a shared project file and historical database records into one table. It downloads the file, retrieves older records, applies a date boundary, prepares the combined data, and refreshes an Azure SQL destination.</p><p class="article-byline">By Ruddi Rodriguez Garcia · Archived implementation reviewed 12 October 2026</p></div>
+<div class="article-layout">
+<nav class="article-toc" aria-label="In this article"><span>IN THIS ARTICLE</span><a href="#problem">The problem</a><a href="#flow">The complete flow</a><a href="#download">Download the shared file</a><a href="#history">Retrieve historical records</a><a href="#boundary">Choose the date boundary</a><a href="#combine">Combine and prepare</a><a href="#upload">Refresh Azure SQL</a><a href="#limits">What the code establishes</a><a href="#experience">Project experience</a></nav>
+<div class="article-body">
+<section id="problem" class="article-section"><h2>Connect two sources with different roles</h2><p>A shared file can hold current project information while an older database holds the history. Bringing both into one destination makes that information available through a common database table.</p><p>In this project, SharePoint supplies the downloaded file, SQL supplies historical project records, and Python controls the sequence between them. Azure SQL is the destination. The central task is deciding which historical records to keep alongside the file before refreshing that destination.</p><p>The description below follows the reviewed implementation. Code excerpts are shortened, anonymised adaptations: company names, internal table names, identifiers, paths, and connection settings are omitted. They explain the relevant steps rather than provide a standalone application.</p></section>
+<section id="flow" class="article-section"><h2>Two inputs, one refreshed destination</h2><figure class="code-example"><figcaption><strong>The implemented sequence</strong><span>SharePoint supplies the file; the existing destination supplies the date boundary</span></figcaption><pre tabindex="0"><code>SharePoint CSV ─────────────────────────────────────┐
+                                                   │
+Historical SQL records ── keep rows before cutoff ───┤
+                                    ▲              │
+Existing Azure SQL table ── earliest request date    │
+                                                   ▼
+                                  Combine rows in Python
+                                                   │
+                                  Convert dates and text
+                                                   │
+                                  Assign SQL column types
+                                                   │
+                                  Replace Azure SQL table</code></pre></figure><p>The main script performs these steps in order. It downloads the SharePoint file, reads the historical database and the destination date range, filters historical rows, reads the downloaded bytes as CSV, and combines the sources. It then prepares values and writes the complete result.</p><p>This is a batch refresh: one execution processes the available inputs. The reviewed code does not include a scheduler or a continuously running synchronisation service.</p></section>
+<section id="download" class="article-section"><h2>Download the shared file into memory</h2><p>The active SharePoint method connects to the configured site with credentials, requests the configured file, and returns its contents as bytes. The main script wraps those bytes in an in-memory buffer and reads them into a pandas DataFrame, which is a table Python can manipulate.</p><figure class="code-example"><figcaption><strong>Retrieve bytes and read the CSV</strong><span>Anonymised adaptation of the active SharePoint download and main-script reader</span></figcaption><pre tabindex="0"><code>from io import BytesIO
+import pandas as pd
+from office365.runtime.auth.user_credential import UserCredential
+from office365.sharepoint.client_context import ClientContext
+from office365.sharepoint.files.file import File
+
+connection = ClientContext(site_url).with_credentials(
+    UserCredential(username, password)
+)
+file_bytes = File.open_binary(connection, file_url).content
+current_rows = pd.read_csv(BytesIO(file_bytes))</code></pre></figure><p>The variables represent caller-supplied settings; no real site, file location, username, or password is shown. The archived implementation reads SharePoint credentials from environment settings.</p><p>The active reader is <code>pd.read_csv</code>. A log message mentions Excel, but that message does not change the reader. The flow described here therefore uses CSV; an Excel workbook would require a corresponding reader change.</p></section>
+<section id="history" class="article-section"><h2>Shape historical records in SQL</h2><p>The historical query does more than retrieve one table. It connects request records with related user, project status, country, project, and analysis information. It selects a common set of output fields, supplies defaults for some missing fields, and derives dates and project duration.</p><p>This is where much of the source-specific meaning lives. SQL prepares the historical records for combination with the file. Python reads the query result into a DataFrame through the database helper.</p><figure class="code-example"><figcaption><strong>Bring a SQL result into Python</strong><span>Anonymised adaptation of the database helper</span></figcaption><pre tabindex="0"><code>import pyodbc
+import pandas as pd
+
+connection = pyodbc.connect(connection_settings)
+historical_rows = pd.read_sql_query(historical_query, connection)</code></pre></figure><p>The query and connection settings are supplied separately. The reviewed historical query contains a filter for one particular project. That limits the rows returned in this snapshot; it should not be described as retrieving every historical project.</p><p>Matching column names matter when the two sources are combined. pandas aligns columns by name. Different names create separate columns with missing values where a source has no corresponding field; concatenation alone does not resolve those differences.</p></section>
+<section id="boundary" class="article-section"><h2>The existing table determines the historical cutoff</h2><p>Before combining the sources, the script queries the destination table for its earliest and latest request dates. It uses the earliest date as a boundary and keeps historical records strictly before it.</p><figure class="code-example"><figcaption><strong>Read the date range already in the destination</strong><span>Anonymised adaptation of the destination query</span></figcaption><pre tabindex="0"><code>SELECT MAX(requested_at) AS latest_request,
+       MIN(requested_at) AS earliest_request
+FROM dbo.consolidated_projects;</code></pre></figure><figure class="code-example"><figcaption><strong>Keep the earlier historical portion</strong><span>Anonymised adaptation of the main-script filter</span></figcaption><pre tabindex="0"><code>cutoff = destination_dates["earliest_request"].min()
+historical_rows = historical_rows[
+    historical_rows["requested_at"] &lt; cutoff
+]</code></pre></figure><p>For example, suppose the destination’s earliest request is 1 June. The filter retains historical requests before 1 June, excludes historical requests on or after that date, and then adds every row from the downloaded file. These dates are illustrative, not values from the private system.</p><p>The cutoff comes from the existing destination, not from the downloaded CSV. The code therefore depends on the destination already containing an appropriate date boundary. It has no dedicated initial-load path for an absent or empty destination.</p><p>The latest request date is retrieved but does not control the active selection. A commented-out alternative mentions filtering newer records; the executed flow uses the earliest-date boundary described above.</p></section>
+<section id="combine" class="article-section"><h2>Combine rows, then prepare values for SQL</h2><p>Once the earlier historical portion is selected, the script places those rows together with all rows from the SharePoint CSV. This is a vertical combination: it adds rows from both sources to one table. It does not match individual records by project ID or update matching records field by field.</p><figure class="code-example"><figcaption><strong>The core consolidation step</strong><span>Anonymised adaptation of the main script; expected_start replaces the private field naming</span></figcaption><pre tabindex="0"><code>combined = pd.concat(
+    [historical_rows, current_rows],
+    ignore_index=True,
+)
+
+combined["expected_start"] = pd.to_datetime(
+    combined["expected_start"]
+)
+text_columns = combined.select_dtypes(include="object").columns
+combined[text_columns] = combined[text_columns].astype(str)</code></pre></figure><p><code>ignore_index=True</code> gives the combined rows a new sequential index. The date conversion prepares the expected start field as a date/time value. Columns stored as general Python objects are converted to strings.</p><p>The implementation also builds a dictionary of SQL types from the resulting column types: text maps to VARCHAR, date/time values to DateTime or Date, floating-point values to Float, and integers to INT. This makes the intended output types explicit when writing the table.</p><p>These conversions are narrow preparation rules. They do not constitute a full validation of every field. In particular, converting an object column to strings can turn missing values into text representations. There is no explicit duplicate-removal or conflict-resolution step after the combination.</p></section>
+<section id="upload" class="article-section"><h2>Refresh the complete Azure SQL table</h2><p>The export helper creates a SQLAlchemy connection for SQL Server and passes the prepared DataFrame to <code>to_sql</code>. The main script requests replacement of the destination table.</p><figure class="code-example"><figcaption><strong>Write the prepared dataset</strong><span>Anonymised adaptation of the export helper; engine and column_types are prepared beforehand</span></figcaption><pre tabindex="0"><code>combined.to_sql(
+    "consolidated_projects",
+    con=engine,
+    schema="dbo",
+    index=False,
+    if_exists="replace",
+    dtype=column_types,
+)</code></pre></figure><p><code>if_exists="replace"</code> means the existing table is dropped and recreated with the combined dataset. It is a complete refresh, rather than an append of only new records. The output dictionary describes the newly written columns; the excerpt does not preserve or recreate existing database keys and indexes.</p><p>The destination’s previous contents influence the historical cutoff, but they are not themselves copied wholesale into the output. The replacement dataset comes from the filtered historical query plus the downloaded file. An incomplete file can therefore affect what remains in the refreshed destination.</p><p>Logging records the major steps: download, reading, transformation, type preparation, and export. The final row-count message describes “new projects,” but its calculation counts the entire combined DataFrame. It is a total output count, not a measured count of newly introduced projects.</p></section>
+<section id="limits" class="article-section"><h2>What the reviewed code establishes</h2><div class="article-table"><table><caption>Implemented behaviour and its boundary</caption><thead><tr><th scope="col">Implemented</th><th scope="col">Boundary</th></tr></thead><tbody><tr><td>Download a configured SharePoint file</td><td>The active main-script reader expects CSV.</td></tr><tr><td>Retrieve and enrich historical SQL records</td><td>The reviewed query limits selection to one specific project.</td></tr><tr><td>Filter historical records by a date boundary</td><td>The boundary is the earliest date in the existing destination.</td></tr><tr><td>Combine rows and prepare selected types</td><td>No explicit record matching, duplicate removal, or complete field validation.</td></tr><tr><td>Write a consolidated Azure SQL table</td><td>The table is replaced on each execution.</td></tr><tr><td>Record progress in a log</td><td>The reported row count does not distinguish newly added projects.</td></tr></tbody></table></div><p>This article is grounded in the archived main script, SharePoint helper, database helper, and two SQL queries. The private repository was inspected remotely; it was not cloned for this article. No SharePoint download, database query, or upload was executed during the review.</p><p>The examples explain the historical implementation. They do not establish that its authentication method, dependencies, or private connections work today. Original source, credentials, company names, internal infrastructure, and records remain private.</p></section>
+<section id="experience" class="article-section"><h2>How I describe the project</h2><p>I developed a Python data-consolidation workflow that downloads a shared CSV from SharePoint, retrieves and reshapes historical project records with SQL, and combines both sources using a date boundary. It prepares values and SQL column types, then refreshes an Azure SQL destination table while logging each processing stage.</p><p>The project demonstrates connecting a document source to databases, using SQL joins and date calculations to prepare historical records, manipulating tables with pandas, and controlling a database refresh from Python. Its key design choice is the boundary between retained history and the shared file’s records.</p><p>Related project: <a href="python-sql-reporting.html">Python and SQL building blocks for reporting</a>.</p></section>
+</div></div></article></main>
+<footer class="wrap"><span>Ruddi Rodriguez Garcia · Project portfolio</span><a href="#">Back to top ↑</a></footer>
+</body></html>
