@@ -1,3 +1,5 @@
 Aggregate outputs of the completed local prompt-classification run, 12 October 2026. Responses API; system and user messages; strict JSON schema; gpt-6-luna; reasoning effort low. Same archived evaluation file and category definitions as ../nlp-llm. 1,325 rows; 87 distinct descriptions; repeated rows retain weight. Original confusion-matrix function reused. No raw responses, descriptions, credentials or private reference code published. Manifest contains exact settings and source fingerprint. Historical comparison uses saved matrices, not retrained classifiers.
 
-Three model-specific subfolders contain aggregate outputs and manifests for the full comparison. model_comparison.csv contains actual saved-run metrics. Offline tests verify request equality except model, caching isolation and duplicate row weighting; their simulated results are not published.
+Four model-specific subfolders contain aggregate outputs and manifests for the full comparison. model_comparison.csv contains actual saved-run metrics. Offline tests verify request equality except model, caching isolation and duplicate row weighting; their simulated results are not published.
+
+Added gpt-5.4-2026-03-05 full run on identical rows, instructions, schema and reasoning effort. Four-model comparison CSV includes all completed results.
