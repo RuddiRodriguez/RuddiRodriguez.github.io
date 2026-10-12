@@ -46,3 +46,7 @@ The user identified the original work as a real banking project and its deployme
 ## LLM seniority follow-up
 
 `nlp-seniority-llm.html` compares a completed local structured-choice LLM run with the original archived NLP confusion matrices on the same 1,325 rows. Aggregate outputs and provenance are in `assets/nlp-llm/`. The article distinguishes row-weighted agreement, repeated descriptions, uncertain reference labels and historical training overlap.
+
+## Prompt classification follow-up
+
+`nlp-seniority-classification.html` adds ordinary structured-output LLM classification on the same archived rows, compared with Decisions and historical classifiers. Safe aggregate outputs and manifest: `assets/nlp-classification/`.

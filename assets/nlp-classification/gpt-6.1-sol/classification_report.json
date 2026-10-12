@@ -1,0 +1,51 @@
+{
+  "Associate": {
+    "precision": 0.025974025974025976,
+    "recall": 0.024096385542168676,
+    "f1-score": 0.025,
+    "support": 83.0
+  },
+  "Director": {
+    "precision": 0.3140096618357488,
+    "recall": 0.30660377358490565,
+    "f1-score": 0.31026252983293556,
+    "support": 212.0
+  },
+  "Entry level": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1-score": 0.0,
+    "support": 373.0
+  },
+  "Executive": {
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1-score": 0.0,
+    "support": 22.0
+  },
+  "Internship": {
+    "precision": 1.0,
+    "recall": 0.8675496688741722,
+    "f1-score": 0.9290780141843972,
+    "support": 151.0
+  },
+  "Mid-Senior level": {
+    "precision": 0.4082313681868743,
+    "recall": 0.7582644628099173,
+    "f1-score": 0.5307302964569776,
+    "support": 484.0
+  },
+  "accuracy": 0.42641509433962266,
+  "macro avg": {
+    "precision": 0.2913691759994415,
+    "recall": 0.32608571513519397,
+    "f1-score": 0.29917847341238507,
+    "support": 1325.0
+  },
+  "weighted avg": {
+    "precision": 0.31495084880563773,
+    "recall": 0.42641509433962266,
+    "f1-score": 0.3509546414729083,
+    "support": 1325.0
+  }
+}
