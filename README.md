@@ -34,3 +34,7 @@ Local checks covered section anchors, file links, source-derived code excerpts, 
 ## Banking context and anonymity
 
 The user identified the original work as a real banking project and its deployment folder as production code. The articles describe the archived batch implementation, not a fresh live-system verification. Bank-specific names, internal infrastructure, source-table names, private categories and identifiers are omitted or replaced with generic names. The SQL examples are abbreviated explanatory adaptations, not executable production extracts. Historical window placement, joining keys, feature timing and limitations are described explicitly. Previously published bank-derived identifiers in examples have also been anonymised. Later saved classifier charts are not described as banking campaign results.
+
+## Automatic Pipelines
+
+`automatic-pipelines.html` explains the public configuration-driven classification demo. The article and chart use the verified 12 October 2026 run on 1,000 synthetic records, with a 20% test split and five training splits. Two automated checks passed, including saved-model loading and training-only preparation. Public source: https://github.com/RuddiRodriguez/automatic_pipelines.
