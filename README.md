@@ -42,3 +42,7 @@ The user identified the original work as a real banking project and its deployme
 ## SharePoint and SQL consolidation
 
 `sharepoint-sql-consolidation.html` documents a remotely reviewed private Python implementation. Anonymised adaptations cover SharePoint CSV download, SQL reading, a destination-derived historical cutoff, concatenation, value conversion, and full Azure SQL table replacement. No private repository was cloned and no external data connections were run. Original names, configuration, identifiers, credentials, and data are excluded.
+
+## LLM seniority follow-up
+
+`nlp-seniority-llm.html` compares a completed local structured-choice LLM run with the original archived NLP confusion matrices on the same 1,325 rows. Aggregate outputs and provenance are in `assets/nlp-llm/`. The article distinguishes row-weighted agreement, repeated descriptions, uncertain reference labels and historical training overlap.
