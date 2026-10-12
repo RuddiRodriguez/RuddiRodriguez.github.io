@@ -37,4 +37,4 @@ The user identified the original work as a real banking project and its deployme
 
 ## Automatic Pipelines
 
-`automatic-pipelines.html` explains the public configuration-driven classification demo. The article and chart use the verified 12 October 2026 run on 1,000 synthetic records, with a 20% test split and five training splits. Two automated checks passed, including saved-model loading and training-only preparation. Public source: https://github.com/RuddiRodriguez/automatic_pipelines.
+`automatic-pipelines.html` explains the public configuration-driven classification demo. The article and chart use the verified 12 October 2026 run on 1,000 synthetic records, with a 20% test split and five training splits. Two automated checks passed, including saved-model loading and training-only preparation. Public source: https://github.com/RuddiRodriguez/automatic-pipelines-demo.
