@@ -1,0 +1,129 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Survey translation and semantic search · Ruddi Rodriguez Garcia</title><meta name="description" content="Translate SPSS responses and XML questionnaires, compare translation approaches, and search survey variables by meaning. Anonymised Python excerpts explain the workflow and its limits."><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=9"></head><body><a class="skip" href="#main">Skip to content</a><header class="wrap"><a class="brand" href="index.html">RG<span>Ruddi Rodriguez Garcia</span></a><nav aria-label="Main navigation"><a href="index.html#entries">Projects</a><a href="https://github.com/RuddiRodriguez">GitHub ↗</a></nav></header><main id="main"><div class="wrap page-back"><a href="index.html#entries">← All project entries</a></div><article class="wrap blog-article"><div class="article-header"><p class="eyebrow">SURVEY DATA / TRANSLATION / SEMANTIC SEARCH / PYTHON</p><h1>Translate survey text.<br>Find variables by meaning.</h1><p class="article-lead">A Python prototype for multilingual SPSS responses and XML questionnaires, with translation-method experiments, MLflow timing, and a separate semantic-search workflow for survey variables.</p><p class="article-byline">By Ruddi Rodriguez Garcia · Archived implementation reviewed 13 October 2026</p></div><div class="article-layout"><nav class="article-toc" aria-label="In this article"><span>IN THIS ARTICLE</span><a href="#purpose">The purpose</a><a href="#workflow">Workflow</a><a href="#routing">File processors</a><a href="#spss">SPSS data and labels</a><a href="#xml">XML questionnaires</a><a href="#methods">Translation methods</a><a href="#benchmark">MLflow timing</a><a href="#search">Semantic search</a><a href="#deployment">Web app and deployment</a><a href="#limits">Implementation limits</a></nav><div class="article-body"><section id="purpose" class="article-section"><h2>Make multilingual survey material easier to analyse</h2><p>Survey work involves more than translating a paragraph. Responses sit inside data tables, questions appear as column labels, and questionnaire text lives in structured files. Analysts need the translated material to remain connected to its original variables.</p><p>I built a Python prototype for translating SPSS survey files and XML questionnaires into English. Alongside it, I explored searching survey variables by meaning: asking for a topic instead of remembering a column identifier.</p><p>This entry follows the reviewed implementation. Excerpts are shortened, anonymised adaptations; client names, project identifiers, real survey content, local paths, and connection secrets are omitted. They explain the main operations rather than provide a complete application.</p></section>
+<section id="workflow" class="article-section"><h2>Two translation routes and one separate search experiment</h2><figure class="code-example"><figcaption><strong>The project workflow</strong><span>The search scripts are separate from the translation web interface</span></figcaption><pre tabindex="0"><code>Upload a survey file or choose it from the command line
+                         │
+                  Select file processor
+                         │
+             ┌───────────┴────────────┐
+             │                        │
+         SPSS .sav                Questionnaire .xml
+             │                        │
+    Read data and labels       Parse the document tree
+             │                        │
+    Select likely text         Select header, question,
+    response columns           and answer text
+             │                        │
+    Translate responses        Translate selected text
+    and column labels                 │
+             │                        │
+    Write translated .sav      Write translated .xml
+             └───────────┬────────────┘
+                         │
+                 Download translated file
+
+Separate experiment:
+Survey column labels → text vectors → search index
+                                          ↑
+Search phrase → text vector → closest variable labels</code></pre></figure><p>The command-line entry point takes a file path and sets English as the target language. A batch script processes matching files in a folder; another provides a folder-selection interface. The Streamlit web page accepts an uploaded SAV or XML file, runs the same processor, and offers the translated file for download.</p><p>The search experiment reads SPSS labels directly. It is not an automatic stage after translation and is not exposed through the reviewed translation page.</p></section>
+<section id="routing" class="article-section"><h2>Choose a processor without changing the calling workflow</h2><figure class="code-example"><figcaption><strong>Route by file extension</strong><span>Adapted from the file-processor factory and command-line entry point</span></figcaption><pre tabindex="0"><code>from pathlib import Path
+
+processors = {
+    &quot;.sav&quot;: SAVProcessor,
+    &quot;.xml&quot;: XMLProcessor,
+}
+processor_class = processors[Path(input_file).suffix.lower()]
+processor = processor_class(source_lang=None, target_lang=&quot;en&quot;)
+processor.translate_document(input_file)</code></pre></figure><p>Each processor knows its file format. The caller supplies a file and language settings; the processor reads, translates, and exports it. A missing source language lets the active Google translator detect the language.</p><p>The archived factory also names a DOC processor, but that class is a placeholder rather than a working Word translator. The web interface accepts only SAV and XML.</p></section>
+<section id="spss" class="article-section"><h2>Translate likely response columns and their labels</h2><p>An SPSS file contains a data table plus information describing its variables. The processor reads both with <code>pyreadstat</code>, copies the table, and identifies columns that appear to contain natural-language text.</p><p>Selection uses the first non-empty string in each text column. It looks for letters, excludes obvious technical values such as screen-resolution patterns or browser names, and skips identifier fields. This is a practical heuristic, not a trained detector of open-ended survey answers.</p><figure class="code-example"><figcaption><strong>Read the file and inspect candidate text columns</strong><span>The 20-row limit is present in the archived implementation</span></figcaption><pre tabindex="0"><code>import pyreadstat
+
+data, metadata = pyreadstat.read_sav(input_file)
+working_data = data.head(20).copy(deep=True)
+text_columns = working_data.select_dtypes(include=&quot;object&quot;).columns
+
+# Apply the project&#x27;s text and identifier filters before translation.
+selected_columns = select_response_columns(working_data[text_columns])</code></pre></figure><p><code>select_response_columns</code> summarises the selection helpers in this excerpt. Once selected, non-empty text values are translated. Numeric columns are not sent for translation.</p><p>The response translation and column-label translation run as two concurrent tasks. The writer passes the translated column labels into the new SAV file.</p><figure class="code-example"><figcaption><strong>Translate text, then export with translated column labels</strong><span>Shortened adaptation; translate_text wraps the active translator</span></figcaption><pre tabindex="0"><code>for column in selected_columns:
+    non_empty = working_data[column].map(
+        lambda value: isinstance(value, str) and bool(value.strip())
+    )
+    working_data.loc[non_empty, column] = (
+        working_data.loc[non_empty, column].map(translate_text)
+    )
+
+translated_labels = [
+    translate_text(label) if label is not None else None
+    for label in metadata.column_labels
+]
+pyreadstat.write_sav(
+    working_data,
+    output_file,
+    column_labels=translated_labels,
+)</code></pre></figure><p>The current processor exports only the first 20 data rows. It also passes column labels rather than explicitly restoring every part of the original SPSS metadata, such as value labels and missing-value rules. Preserving all SPSS information would require additional work.</p></section>
+<section id="xml" class="article-section"><h2>Translate selected questionnaire elements</h2><p>The XML route parses the questionnaire as a tree, then visits <code>header</code>, <code>question</code>, and <code>answer</code> elements. It replaces their text and writes a new UTF-8 XML document.</p><figure class="code-example"><figcaption><strong>Visit the text-bearing elements</strong><span>Shortened adaptation of the XML processor</span></figcaption><pre tabindex="0"><code>import xml.etree.ElementTree as ET
+
+tree = ET.parse(input_file)
+root = tree.getroot()
+
+for tag in (&quot;header&quot;, &quot;question&quot;, &quot;answer&quot;):
+    for element in root.iter(tag):
+        if element.text:
+            element.text = translate_text(element.text)
+
+tree.write(output_file, encoding=&quot;utf-8&quot;, xml_declaration=True)</code></pre></figure><p>The original helper also cleans particular formatting markers, splits text on “. ”, translates the resulting pieces, and joins them again. The excerpt isolates the core traversal and replacement.</p><p>This translates the selected elements’ direct text. It does not promise complete handling of nested formatting, element-tail text, or every possible questionnaire structure. XML serialisation can also change the original formatting.</p></section>
+<section id="methods" class="article-section"><h2>Three translation methods explored</h2><div class="article-table"><table><thead><tr><th scope="col">Method</th><th scope="col">How it works</th><th scope="col">Role in this project</th></tr></thead><tbody><tr><th scope="row">Google Translate</th><td>Sends text to Google’s translation service through a Python wrapper; detects the source language when omitted.</td><td>Active method for SPSS text, column labels, and XML text.</td></tr><tr><th scope="row">M2M100</th><td>Uses a pretrained multilingual translation model and tokenizer locally, with explicit source and target language codes.</td><td>Alternative helper and benchmark route.</td></tr><tr><th scope="row">GPT-3.5 Turbo</th><td>Asks a language model to translate text through a system instruction and user message.</td><td>Alternative helper and benchmark route using the archived OpenAI SDK.</td></tr></tbody></table></div><figure class="code-example"><figcaption><strong>The active translation call</strong><span>Uses the archived googletrans wrapper; this is not a Google Cloud client</span></figcaption><pre tabindex="0"><code>from googletrans import Translator
+
+translator = Translator()
+
+def translate_text(text):
+    if source_language:
+        return translator.translate(
+            text, src=source_language, dest=target_language
+        ).text
+    return translator.translate(text, dest=target_language).text</code></pre></figure><figure class="code-example"><figcaption><strong>The local model alternative</strong><span>Adapted from the M2M100 helper; model and tokenizer are loaded beforehand</span></figcaption><pre tabindex="0"><code>tokenizer.src_lang = source_language
+encoded = tokenizer(text, return_tensors=&quot;pt&quot;).to(device)
+generated = model.generate(
+    **encoded,
+    forced_bos_token_id=tokenizer.get_lang_id(target_language),
+)
+translated_text = tokenizer.batch_decode(
+    generated, skip_special_tokens=True
+)[0]</code></pre></figure><p>The selected local checkpoint is <code>facebook/m2m100_418M</code>. Its language-token setting tells the model which language to generate. The project uses pretrained weights; it does not train a translation model.</p><figure class="code-example"><figcaption><strong>The archived GPT translation request</strong><span>Historical API syntax from OpenAI SDK 0.27.8; not a current setup guide</span></figcaption><pre tabindex="0"><code>response = openai.ChatCompletion.create(
+    model=&quot;gpt-3.5-turbo&quot;,
+    messages=[
+        {&quot;role&quot;: &quot;system&quot;, &quot;content&quot;:
+            f&quot;Translate from {source_language} to {target_language}.&quot;},
+        {&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: text},
+    ],
+    temperature=0,
+)
+translated_text = response.choices[0].message.content</code></pre></figure><p>These alternatives are present in the source, but the active SAV and XML paths call Google Translate. The SAV method still loads M2M100 even when Google performs the translations, adding unnecessary model-loading overhead.</p></section>
+<section id="benchmark" class="article-section"><h2>Record translation timing with MLflow</h2><p>A separate benchmark selects a translation method and times processing for each selected column. It records the method, column, number of rows, and elapsed time in MLflow backed by a local SQLite database.</p><figure class="code-example"><figcaption><strong>Keep method and workload beside elapsed time</strong><span>Anonymised adaptation of the benchmark logging</span></figcaption><pre tabindex="0"><code>with mlflow.start_run():
+    mlflow.set_tags({&quot;translator&quot;: method, &quot;column&quot;: column})
+    mlflow.log_params({
+        &quot;total_rows&quot;: len(data),
+        &quot;non_empty_rows&quot;: int(non_empty.sum()),
+    })
+    mlflow.log_metric(&quot;Time&quot;, elapsed_seconds)</code></pre></figure><p>Timing records help inspect workload and execution speed. They do not measure meaning preservation, fluency, or translation accuracy. The reviewed repository does not provide a verified quality ranking of these methods.</p><p>There is also a benchmark defect: the GPT branch selects missing values instead of non-empty text. That prevents treating its recorded workload as a fair comparison without correction and a fresh run.</p></section>
+<section id="search" class="article-section"><h2>Find survey variables by meaning</h2><p>Survey column identifiers are often difficult to remember. Semantic search addresses a different task from translation: given a phrase such as “Household members”, retrieve labels that describe a similar topic even when the wording differs.</p><p>The PyTorch script reads the SPSS mapping between column names and labels. It combines each label with its identifier, converts the text into a numerical vector, and adds those vectors to an Annoy search index.</p><figure class="code-example"><figcaption><strong>Build searchable text from SPSS metadata</strong><span>Labels provide readable meaning; identifiers keep the results connected to columns</span></figcaption><pre tabindex="0"><code>labels = pd.DataFrame(
+    metadata.column_names_to_labels.items(),
+    columns=[&quot;key&quot;, &quot;label&quot;],
+).dropna()
+texts = (labels[&quot;label&quot;] + &quot; \n &quot; + labels[&quot;key&quot;]).tolist()</code></pre></figure><p>The selected model is <code>sentence-transformers/multi-qa-mpnet-base-dot-v1</code>. The code loads it through Hugging Face’s tokenizer and model classes and uses the first token’s final representation as the text vector.</p><figure class="code-example"><figcaption><strong>Convert text into vectors and retrieve nearby labels</strong><span>Shortened adaptation of the PyTorch and Annoy implementation</span></figcaption><pre tabindex="0"><code>def embed(texts):
+    inputs = tokenizer(
+        texts, padding=True, truncation=True, return_tensors=&quot;pt&quot;
+    )
+    inputs = {name: value.to(device) for name, value in inputs.items()}
+    output = model(**inputs)
+    return output.last_hidden_state[:, 0].detach().cpu().numpy()
+
+vectors = embed(texts)
+index = AnnoyIndex(vectors.shape[1])
+for position, vector in enumerate(vectors):
+    index.add_item(position, vector)
+index.build(10)
+
+query_vector = embed([&quot;Household members&quot;])[0]
+positions, distances = index.get_nns_by_vector(
+    query_vector, 20, include_distances=True
+)
+results = labels.iloc[positions]</code></pre></figure><p>Nearby vectors suggest related variables. The returned distances rank similarity; they are not calibrated probabilities that a variable is correct. The script prints matching labels and their identifiers rather than generating an answer or translating them.</p><p>The original script requests CUDA directly, so its device setup assumes a compatible GPU. It can load an existing index, but the mapping from index positions to labels must remain consistent. Building an index and reliably packaging it for reuse are separate concerns.</p><p>Related scripts extract question identifiers and text from questionnaire XML into a dictionary. TensorFlow and commented LangChain experiments also exist. They are separate explorations, not evidence that the web app provides an integrated questionnaire-search service.</p></section>
+<section id="deployment" class="article-section"><h2>A web interface and an Azure deployment configuration</h2><p>The Streamlit page writes an uploaded file temporarily, calls the selected processor, and offers the resulting file for download. Input and translated temporary files are then removed by the application flow.</p><p>GitHub Actions is configured to install dependencies with Python 3.10 and deploy the packaged application to Azure App Service when the main development branch is updated. Deployment credentials are referenced through repository secrets; no real app identifiers or credential references appear in these excerpts.</p><p>The fuller development repository contains documentation, notebooks, an extracted dictionary, and an index reference. Its smaller deployment copy shares the same application source. That copy is not a different translation algorithm.</p><p>Reviewing deployment configuration does not establish that a live service is currently available. This article documents the implementation; I have not rerun translation, benchmarked the services, or checked a deployed instance for this entry.</p></section>
+<section id="limits" class="article-section"><h2>What the prototype demonstrates</h2><p>The project connects file handling, text selection, translation, and export in a reusable workflow. It also explores a useful extension: finding survey variables through their meaning.</p><p>The main boundaries matter when interpreting it:</p><ul><li>The SPSS application path processes 20 rows, not a complete survey export.</li><li>Text-column selection relies on an example value and can include or exclude the wrong column.</li><li>The response translation cache is recreated inside each call, so repeated responses do not benefit from a persistent cache.</li><li>Export passes translated column labels without explicitly preserving every SPSS metadata field; cleanup can also alter original text.</li><li>XML translation covers selected direct-text elements rather than arbitrary structured documents.</li><li>Benchmarks record elapsed time, with no validated translation-quality or search-relevance results.</li></ul><p>These limits describe the reviewed code. The public excerpts make its most useful ideas inspectable while keeping private survey material outside the portfolio.</p></section></div></div></article></main><footer class="wrap"><span>Ruddi Rodriguez Garcia · Project portfolio</span><a href="#">Back to top ↑</a></footer></body></html>

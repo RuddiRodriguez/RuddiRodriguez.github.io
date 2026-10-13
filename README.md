@@ -50,3 +50,9 @@ The user identified the original work as a real banking project and its deployme
 ## Prompt classification follow-up
 
 `nlp-seniority-classification.html` adds ordinary structured-output LLM classification on the same archived rows, compared with Decisions and historical classifiers. Safe aggregate outputs and manifest: `assets/nlp-classification/`.
+
+## Survey translation and search
+
+`survey-translation.html` documents the archived translation prototype: SAV/XML processing, active Google translation, alternative M2M100 and historical GPT calls, MLflow timing, separate PyTorch/Annoy semantic search, and Azure deployment configuration. Excerpts are shortened and anonymised; no client names, original survey text, private paths, app identifiers, secrets, or extracted dictionaries are published.
+
+Reviewed source revisions: translation `58d2f9d86083e81683672c5c5788384ccf5d86c8`; translation_deploy `7da1ed4cf62c542bbe46798f1dce5866c961063e`. Core source files match across both repositories. Historical OpenAI syntax is explicitly identified. No translation services or search models were run for this entry.
