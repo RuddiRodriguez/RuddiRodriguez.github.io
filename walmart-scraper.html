@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Walmart catalog scraper · Ruddi Rodriguez Garcia</title>
+<meta name="description" content="Two Walmart collection samples, three archived product rows, and how I checked store-specific pickup prices.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=12"></head>
+<body><a class="skip" href="#main">Skip to content</a>
+<header class="wrap"><a class="brand" href="index.html">RG<span>Ruddi Rodriguez Garcia</span></a><nav aria-label="Main navigation"><a href="index.html#project-index">All projects</a><a href="https://github.com/RuddiRodriguez">GitHub ↗</a></nav></header>
+<main id="main"><article class="wrap blog-article">
+<div class="article-header"><p class="eyebrow">WEB SCRAPING / RETAIL DATA</p>
+<h1>Walmart catalog scraper</h1><p class="article-lead">A product page can show a price for the wrong store. I built a Python scraper that checked which store and pickup option each price belonged to before saving it.</p></div>
+<div class="article-body">
+<section class="article-section"><h2>What the scraper kept</h2>
+<p>Each product had a source URL, collection time, and separate regular and sale price fields. If pickup was unavailable, the product could stay in the sample with its price fields blank. A price from another store would have been a plausible number in the wrong row.</p>
+<h3>Three rows from the October 25, 2026 repeat sample</h3>
+<div class="article-table"><table aria-label="Historical product data from one Walmart store"><thead><tr><th scope="col">Product</th><th scope="col">Regular price (USD)</th><th scope="col">Sale price (USD)</th></tr></thead><tbody>
+<tr><td>Great Value Cut Green Beans, 14.5 oz Can</td><td>0.82</td><td>0.50</td></tr>
+<tr><td>Bush&#x27;s Original Baked Beans, Canned Beans, 8.3 oz Can</td><td>1.72</td><td></td></tr>
+<tr><td>(48 pack) Great Value Chunk Light Tuna in Water, 5 oz</td><td></td><td></td></tr>
+</tbody></table></div>
+<p>The beans in the first row had both a regular and a sale price. The second row had no sale price. The tuna had no verified local price; neither blank means zero. <a href="https://github.com/RuddiRodriguez/walmart-azure-scraper/blob/cc5ff93f0ac3b9c3d47493bba26e80ae9e664ebb/evidence/controlled-skip-invalid-repeat-20261025/products.json">View the archived rows ↗</a></p></section>
+<section class="article-section"><h2>What the two runs showed</h2>
+<p>Each run recorded 506 distinct products across 11 categories, with no duplicate product IDs within either sample. The repeat rejected six responses: two for the wrong store and four without local pickup evidence.</p>
+<p>The two samples shared 468 product IDs. Of those, 433 had a comparable price in both runs; all 433 matched. These were limited samples. They do not establish full catalog coverage or ongoing automated delivery.</p>
+<p><a href="https://github.com/RuddiRodriguez/walmart-azure-scraper/blob/cc5ff93f0ac3b9c3d47493bba26e80ae9e664ebb/evidence/controlled-skip-invalid-repeat-20261025/COMPARISON.md">Read the run comparison ↗</a> · <a href="nlp-data-collection.html">See my LinkedIn job collection project →</a></p>
+</section></div></article></main><footer class="wrap"><span>Ruddi Rodriguez Garcia · Project portfolio</span><a href="index.html#entries">All projects</a></footer></body></html>
