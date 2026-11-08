@@ -56,3 +56,8 @@ The user identified the original work as a real banking project and its deployme
 `survey-translation.html` documents the archived translation prototype: SAV/XML processing, active Google translation, alternative M2M100 and historical GPT calls, MLflow timing, separate PyTorch/Annoy semantic search, and Azure deployment configuration. Excerpts are shortened and anonymised; no client names, original survey text, private paths, app identifiers, secrets, or extracted dictionaries are published.
 
 Reviewed source revisions: translation `58d2f9d86083e81683672c5c5788384ccf5d86c8`; translation_deploy `7da1ed4cf62c542bbe46798f1dce5866c961063e`. Core source files match across both repositories. Historical OpenAI syntax is explicitly identified. No translation services or search models were run for this entry.
+
+
+## Saved Instagram video library
+
+`instagram-video-library.html` tells the story of `igvault` (public source: https://github.com/RuddiRodriguez/igvault): an embeddings + k-means classifier that grouped saved videos by language, and the LLM describe → design folders → assign rewrite. Figures (283 videos; 11/45 vs 0/45 clearly misfiled in a single-reviewer spot check; 11 vs 280 distinct tag lists) come from the 8 November 2026 local run. No videos, captions, account handles, sessions or keys are published.
