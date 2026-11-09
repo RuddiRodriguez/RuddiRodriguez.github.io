@@ -21,6 +21,25 @@
 <div><span>05</span><h3>Check</h3><p>Review exceptions, duplicates, missing sources, and changes outside the intended rows.</p></div>
 <div><span>06</span><h3>Checkpoint</h3><p>Save small batches with a validation report so work can stop and resume safely.</p></div>
 </div></section>
+<section class="article-section"><h2>Code example: stop wrong-store data</h2>
+<p>This excerpt comes from the Walmart collector. A product response is rejected when its product, pickup store, or postal code does not match the requested record. A price is not saved merely because the page contains one.</p>
+<figure class="code-example"><figcaption><strong>Store and product checks before extraction</strong><span>Python · shortened from the working collector</span></figcaption><pre><code>product = next_data(soup).get("data", {}).get("product")
+if not product or str(product.get("usItemId")) != candidate["item_id"]:
+    raise ValueError("Product identity mismatch or missing response")
+
+location = product.get("location") or {}
+pickup_store = (location.get("pickupLocation") or {}).get("storeId")
+
+if location.get("intent") != "PICKUP" or str(pickup_store) != str(store["id"]):
+    raise ValueError("Location mismatch: publication prohibited")
+
+if str(location.get("postalCode") or "") != store["zip"]:
+    raise ValueError("Location ZIP mismatch: publication prohibited")
+
+if not pickup(product, store) and not local_out_of_stock:
+    return None, "no_local_pickup", product</code></pre></figure>
+<p><a href="https://github.com/RuddiRodriguez/walmart-azure-scraper/blob/cc5ff93f0ac3b9c3d47493bba26e80ae9e664ebb/extract.py#L126-L144">View the archived source ↗</a></p>
+</section>
 <section class="article-section"><h2>The evidence rule</h2>
 <div class="article-table"><table aria-label="Evidence levels used by the workflow"><thead><tr><th scope="col">Evidence</th><th scope="col">Treatment</th><th scope="col">Example</th></tr></thead><tbody>
 <tr><td>Current and directly matched</td><td>Accept with its source</td><td>An official page names the person and publishes the address.</td></tr>
@@ -29,6 +48,45 @@
 <tr><td>Masked, guessed, or unmatched</td><td>Reject or leave blank</td><td>A naming pattern suggests an email, but no source publishes it.</td></tr>
 </tbody></table></div>
 <p>A blank field means “not supported by the required evidence.” It does not mean zero, false, or that the value does not exist.</p></section>
+<section class="article-section"><h2>Code example: protect the original workbook</h2>
+<p>The company-enrichment pipeline checks the existing company and phone before applying a researched update. A separate validation pass then allows changes only in the intended rows and fields.</p>
+<figure class="code-example"><figcaption><strong>Reject updates that do not match the original row</strong><span>Python · simplified from the paused workbook pipeline</span></figcaption><pre><code>if company != update["company_name"] or phone != update["existing_phone"]:
+    rejected.append(record_id)
+    continue
+
+master.cell(row, headers["email"], update["email"])
+master.cell(row, headers["email_status"], update["email_status"])
+master.cell(row, headers["source_url"], update["source_url"])
+master.cell(row, headers["research_notes"], update["research_notes"])</code></pre></figure>
+<figure class="code-example"><figcaption><strong>Count any change outside the approved scope</strong><span>Python · validation step</span></figcaption><pre><code>ALLOWED_FIELDS = {
+    "email", "email_status", "phone_status",
+    "source_url", "checked_at_utc", "research_notes",
+}
+
+if old_cell.value != new_cell.value:
+    field = after_sheet.cell(1, column).value
+    if record_id in target_ids and field in ALLOWED_FIELDS:
+        allowed_changes += 1
+    else:
+        unexpected_changes += 1</code></pre></figure>
+</section>
+<section class="article-section"><h2>Data examples from completed checks</h2>
+<div class="article-table"><table aria-label="Verified data examples from three scraping projects"><thead><tr><th scope="col">Checked sample</th><th scope="col">Accepted result</th><th scope="col">Rejected or unresolved</th></tr></thead><tbody>
+<tr><td>Walmart repeat sample: 506 distinct products</td><td>433 shared products had comparable prices; all 433 matched the earlier sample</td><td>Six responses rejected: two wrong-store responses and four without local pickup evidence</td></tr>
+<tr><td>Investment research: 43 senior professionals</td><td>17 published individual emails and 26 matched LinkedIn profiles</td><td>Unpublished emails and unclear profile matches remained blank</td></tr>
+<tr><td>Romanian workbook, final 20-row batch</td><td>Eight sourced emails added; three explicitly labelled historical</td><td>12 emails remained blank; zero unexpected workbook changes</td></tr>
+</tbody></table></div>
+<p>These are bounded project results, not estimates of future coverage.</p>
+<figure class="code-example"><figcaption><strong>Machine-readable checkpoint result</strong><span>JSON · final Romanian workbook batch</span></figcaption><pre><code>{
+  "batch": 48,
+  "target_master_rows": 20,
+  "new_emails_found_in_batch": 8,
+  "unexpected_changes": 0,
+  "sector_mismatches": 0,
+  "remaining_missing_emails": 19042,
+  "validation_status": "passed"
+}</code></pre></figure>
+</section>
 <section class="article-section"><h2>How the method changed across three projects</h2>
 <div class="article-table"><table aria-label="Use of the scraping method across portfolio projects"><thead><tr><th scope="col">Project</th><th scope="col">Main risk</th><th scope="col">Verification used</th></tr></thead><tbody>
 <tr><td><a href="walmart-scraper.html">Walmart catalog scraper</a></td><td>A valid price could belong to the wrong store or fulfilment option.</td><td>Store and pickup evidence were checked before a price was saved.</td></tr>
