@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Particle motion evaluation challenge · Ruddi Rodriguez Garcia</title>
+<meta name="description" content="A runnable machine learning challenge with original simulated particle tracks, a Python grader, and a reference notebook tested on GitHub-hosted Linux.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=13"></head>
+<body><a class="skip" href="#main">Skip to content</a>
+<header class="wrap"><a class="brand" href="index.html">RG<span>Ruddi Rodriguez Garcia</span></a><nav aria-label="Main navigation"><a href="index.html#project-index">All projects</a><a href="https://github.com/RuddiRodriguez/particle-motion-challenge">Source on GitHub ↗</a></nav></header>
+<main id="main"><article class="wrap blog-article">
+<div class="article-header"><p class="eyebrow">AGENT EVALUATION / MACHINE LEARNING</p>
+<h1>Can an agent tell how a particle moves?</h1>
+<p class="article-lead">A particle can travel in a straight line for a few frames just by chance. This challenge asks an agent to tell random wandering from persistent drift or confinement, using only a sequence of coordinates.</p>
+<p><a href="https://github.com/RuddiRodriguez/particle-motion-challenge">Open the challenge repository ↗</a> · <a href="https://github.com/RuddiRodriguez/particle-motion-challenge/blob/main/reference.ipynb">Read the reference notebook ↗</a></p></div>
+<div class="article-body">
+<section class="article-section"><h2>Three tracks, three kinds of motion</h2>
+<div class="report-gallery"><figure><img src="assets/particle-motion/training-tracks.png" alt="Three simulated paths: a wandering particle, a particle with persistent drift, and one pulled back toward its starting region."><figcaption>Each line follows 80 observed positions from the training data. The open circle marks the start; the solid dot marks the end. Each track starts at (0, 0). Panels use different scales to show the shape.</figcaption></figure></div>
+<p>The simulator makes 900 labeled training tracks and 300 separate test tracks. For each motion type, it includes short and long recordings with either low or high observation noise. All tracks come from equations in the repository; the <a href="https://github.com/RuddiRodriguez/particle-motion-challenge/blob/main/DATA_LICENSE.txt">CC0 dataset license</a> covers commercial reuse.</p></section>
+<section class="article-section"><h2>How the solution is judged</h2>
+<p>The agent submits one row per test track: its ID and one of three labels. The grader rejects missing, repeated, or unexpected IDs. It reports seven checks: valid submission, overall score, recall for each of the three motion types, and separate scores for short and noisy tracks.</p>
+<p>The notebook compares how far a particle moves over different time intervals, how often consecutive steps line up, and how stretched out its path is. It uses those measurements to train a classifier. The test answer key stays with the evaluator.</p>
+<div class="result-stats"><div><strong>0.893</strong><span>Reference macro F1</span><small>300 simulated test tracks</small></div><div><strong>0.167</strong><span>Constant prediction</span><small>Same label for every track</small></div><div><strong>7 / 7</strong><span>Grading checks passed</span><small>Public benchmark split</small></div></div>
+<p>Macro F1 gives each motion type equal weight. The most difficult class was random wandering: the model recognized 83 of 100 diffusive tracks, compared with 90 of 100 directed tracks and 95 of 100 confined tracks. These results measure performance on simulated data only.</p></section>
+<section class="article-section"><h2>Reproduce the result</h2>
+<p>From the repository in a Python 3.10 environment on Linux:</p>
+<figure class="code-example"><figcaption><strong>Install, generate data, run the notebook and grade it</strong></figcaption><pre><code>python -m pip install -c constraints-linux.txt . &amp;&amp; python run.py</code></pre></figure>
+<p>Two clean runs on GitHub-hosted Ubuntu produced identical data, predictions and grade reports. For a blind test, the evaluator can choose a private seed that changes only the test set and give the agent only its input files.</p>
+<p><a href="https://github.com/RuddiRodriguez/particle-motion-challenge/actions/runs/42609161264">Inspect the successful Linux run ↗</a> · <a href="assets/particle-motion/grade-report.json">Read the seven-check JSON report →</a></p>
+<p>This benchmark grew out of my <a href="motion-classification.html">earlier particle-tracking work</a>. The new example uses its own simulator and does not redistribute experimental microscopy records.</p>
+</section></div></article></main><footer class="wrap"><span>Ruddi Rodriguez Garcia · Project portfolio</span><a href="index.html#project-index">All projects</a></footer></body></html>

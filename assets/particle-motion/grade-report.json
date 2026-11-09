@@ -1,0 +1,39 @@
+{
+  "checks": {
+    "complete_submission": {
+      "passed": true
+    },
+    "high_noise_macro_f1": {
+      "minimum": 0.62,
+      "passed": true,
+      "value": 0.851543
+    },
+    "macro_f1": {
+      "minimum": 0.72,
+      "passed": true,
+      "value": 0.892973
+    },
+    "recall_confined": {
+      "minimum": 0.6,
+      "passed": true,
+      "value": 0.95
+    },
+    "recall_diffusive": {
+      "minimum": 0.6,
+      "passed": true,
+      "value": 0.83
+    },
+    "recall_directed": {
+      "minimum": 0.6,
+      "passed": true,
+      "value": 0.9
+    },
+    "short_track_macro_f1": {
+      "minimum": 0.62,
+      "passed": true,
+      "value": 0.873551
+    }
+  },
+  "passed": true,
+  "score": 0.892973
+}

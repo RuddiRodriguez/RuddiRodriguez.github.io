@@ -61,3 +61,7 @@ Reviewed source revisions: translation `58d2f9d86083e81683672c5c5788384ccf5d86c8
 ## Saved Instagram video library
 
 `instagram-video-library.html` tells the story of `igvault` (public source: https://github.com/RuddiRodriguez/igvault): an embeddings + k-means classifier that grouped saved videos by language, and the LLM describe → design folders → assign rewrite. Figures (283 videos; 11/45 vs 0/45 clearly misfiled in a single-reviewer spot check; 11 vs 280 distinct tag lists) come from the 8 November 2026 local run. No videos, captions, account handles, sessions or keys are published.
+
+## Particle motion evaluation challenge
+
+`particle-motion-challenge.html` documents the [standalone agent benchmark](https://github.com/RuddiRodriguez/particle-motion-challenge). Its figure uses generated training tracks. The checked-in grade report contains the measurements from [the GitHub-hosted Python 3.10 run](https://github.com/RuddiRodriguez/particle-motion-challenge/actions/runs/42609161264), not measurements from real microscopy.
