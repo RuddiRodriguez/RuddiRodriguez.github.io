@@ -4,7 +4,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Survey Follow-up Engine · Ruddi Rodriguez Garcia</title>
 <meta name="description" content="How a survey API and prediction library decide when to ask one more question. An activity diagram traces cached and fresh predictions.">
-<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=12"><link rel="stylesheet" href="assets/uml/diagrams.css">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=12"><link rel="stylesheet" href="assets/uml/diagrams.css?v=2">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -18,8 +18,8 @@
 <section id="activity-diagram" class="article-section"><h2>From API to library</h2>
 <p>The survey API receives the original question and the respondent’s answer. It checks whether the request can use this service, looks up a saved prediction, and gathers the available descriptions or transcripts if media was supplied. It then passes the prepared input to the follow-up library.</p>
 <figure class="uml-diagram">
-<div class="uml-view" tabindex="0" role="region" aria-label="Scrollable activity diagram"><img src="assets/uml/survey-follow-up.svg" alt="Two activity lanes show the survey API passing a request to the library. A saved result skips three parallel tasks. Both paths apply the same rules and return a decision to the API." width="890" height="877"></div>
-<figcaption>Left: the API handles the request and response. Right: the library assesses the answer. The two dark bars mark where parallel work starts and where all three results must be ready. <a href="assets/uml/survey-follow-up.svg">Open full-size diagram ↗</a> · <a href="https://app.diagrams.net/#Uhttps%3A%2F%2Fruddirodriguez.github.io%2Fassets%2Fuml%2Fsurvey-follow-up.drawio">Edit a copy in diagrams.net ↗</a></figcaption>
+<div class="uml-view" tabindex="0" role="region" aria-label="Scrollable activity diagram"><img src="assets/uml/survey-follow-up.drawio.png" alt="Two activity lanes show the survey API passing a request to the library. A saved result skips three parallel tasks. Both paths apply the same rules and return a decision to the API." class="survey-diagram" width="1720" height="1610"></div>
+<figcaption>Left: the API handles the request and response. Right: the library assesses the answer. The two horizontal bars mark where parallel work starts and where all three results must be ready. <a href="assets/uml/survey-follow-up.drawio.png">Open full-size diagrams.net PNG ↗</a> · <a href="https://app.diagrams.net/#Uhttps%3A%2F%2Fruddirodriguez.github.io%2Fassets%2Fuml%2Fsurvey-follow-up.drawio">Edit a copy in diagrams.net ↗</a></figcaption>
 </figure>
 <p>This <a href="https://www.omg.org/spec/UML/2.5.1/">UML activity diagram</a> traces eligible requests. An unsupported survey language or region, a request assigned to the older version, or a reported media error can return from the API before the library is called.</p></section>
 <section id="decision" class="article-section"><h2>Drafting a question and deciding to ask it are separate steps</h2>

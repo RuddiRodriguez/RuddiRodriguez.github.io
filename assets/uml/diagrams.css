@@ -6,5 +6,5 @@
 .uml-diagram figcaption a { white-space: nowrap; }
 @media (max-width: 680px) {
   .uml-view img { min-width: 610px; }
-  .uml-view img[width="890"] { min-width: 760px; }
+  .uml-view img.survey-diagram { min-width: 760px; }
 }
