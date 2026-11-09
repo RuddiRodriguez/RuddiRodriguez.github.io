@@ -1,0 +1,10 @@
+.uml-diagram { margin: 1.5rem 0; border: 1px solid var(--line); background: #faf9f4; }
+.uml-view { overflow-x: auto; }
+.uml-view:focus-visible { outline: 2px solid #31665a; outline-offset: -2px; }
+.uml-view img { display: block; width: 100%; height: auto; }
+.uml-diagram figcaption { padding: .9rem 1rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .9rem; line-height: 1.6; }
+.uml-diagram figcaption a { white-space: nowrap; }
+@media (max-width: 680px) {
+  .uml-view img { min-width: 610px; }
+  .uml-view img[width="890"] { min-width: 760px; }
+}

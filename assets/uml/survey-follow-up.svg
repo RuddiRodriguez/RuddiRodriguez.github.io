@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 890 877" width="890" height="877" role="img" aria-labelledby="title desc"><title id="title">From survey answer to follow-up decision</title><desc id="desc">For an eligible request, the API reads a saved prediction and prepares any media. The library uses either cached results or three parallel tasks, then applies follow-up rules. The API returns the decision and optional question.</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="userSpaceOnUse" viewBox="0 0 8 8"><path d="M1 1 L7 4 L1 7" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round"/></marker></defs>
+<rect width="890" height="877" fill="#faf9f4"/>
+<text x="24" y="29" text-anchor="start" fill="#31665a" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" letter-spacing="1.65">02   /   UML ACTIVITY DIAGRAM</text>
+<text x="24" y="65" text-anchor="start" fill="#172f30" font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="700" letter-spacing="0">From survey answer to follow-up decision</text>
+<rect x="18" y="91" width="854" height="759" rx="0" fill="#fff" stroke="#9baea8" stroke-width="1.4"/>
+<rect x="18" y="91" width="221" height="46" rx="0" fill="#eaf0f4" stroke="#9baea8" stroke-width="1.4"/>
+<rect x="239" y="91" width="633" height="46" rx="0" fill="#e5f2ea" stroke="#9baea8" stroke-width="1.4"/>
+<path d="M239 137 V850" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round"/>
+<text x="128" y="120" text-anchor="middle" fill="#1b3535" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" letter-spacing="0">Survey API</text>
+<text x="555" y="120" text-anchor="middle" fill="#1b3535" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" letter-spacing="0">Follow-up library</text>
+<circle cx="128" cy="163" r="7" fill="#213f3b"/>
+<rect x="35" y="189" width="186" height="54" rx="12" fill="#eaf0f4" stroke="#7e9991" stroke-width="1.4"/>
+<text x="128.0" y="211.5" text-anchor="middle" fill="#1b3535" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" letter-spacing="0">Receive question</text>
+<text x="128.0" y="230.5" text-anchor="middle" fill="#1b3535" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" letter-spacing="0">and survey answer</text>
+<rect x="35" y="266" width="186" height="54" rx="12" fill="#eaf0f4" stroke="#7e9991" stroke-width="1.4"/>
+<text x="128.0" y="288.5" text-anchor="middle" fill="#1b3535" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" letter-spacing="0">Select settings and</text>
+<text x="128.0" y="307.5" text-anchor="middle" fill="#1b3535" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" letter-spacing="0">read prediction cache</text>
+<rect x="35" y="343" width="186" height="62" rx="12" fill="#eaf0f4" stroke="#7e9991" stroke-width="1.4"/>
+<text x="128.0" y="369.5" text-anchor="middle" fill="#1b3535" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" letter-spacing="0">Prepare any media</text>
+<text x="128.0" y="388.5" text-anchor="middle" fill="#1b3535" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" letter-spacing="0">and build library input</text>
+<rect x="313" y="343" width="356" height="62" rx="12" fill="#e5f2ea" stroke="#7e9991" stroke-width="1.4"/>
+<text x="491.0" y="379.0" text-anchor="middle" fill="#1b3535" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" letter-spacing="0">Predict using the prepared input</text>
+<path d="M491 430 l12 10 -12 10 -12 -10 z" fill="#fff4d7" stroke="#86682c" stroke-width="1.55"/>
+<rect x="324" y="488" width="335" height="4" rx="1" fill="#254d48" stroke="#254d48" stroke-width="1.4"/>
+<rect x="250" y="520" width="148" height="66" rx="12" fill="#e5f2ea" stroke="#7e9991" stroke-width="1.4"/>
+<text x="324.0" y="548.5" text-anchor="middle" fill="#1b3535" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" letter-spacing="0">Assess answer</text>
+<text x="324.0" y="567.5" text-anchor="middle" fill="#1b3535" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" letter-spacing="0">detail</text>
+<rect x="417" y="520" width="148" height="66" rx="12" fill="#e5f2ea" stroke="#7e9991" stroke-width="1.4"/>
+<text x="491.0" y="548.5" text-anchor="middle" fill="#1b3535" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" letter-spacing="0">Assess topic</text>
+<text x="491.0" y="567.5" text-anchor="middle" fill="#1b3535" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" letter-spacing="0">sensitivity</text>
+<rect x="585" y="520" width="148" height="66" rx="12" fill="#e5f2ea" stroke="#7e9991" stroke-width="1.4"/>
+<text x="659.0" y="548.5" text-anchor="middle" fill="#1b3535" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" letter-spacing="0">Draft a possible</text>
+<text x="659.0" y="567.5" text-anchor="middle" fill="#1b3535" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" letter-spacing="0">follow-up</text>
+<rect x="745" y="520" width="113" height="66" rx="12" fill="#fff" stroke="#7e9991" stroke-width="1.4"/>
+<text x="801.5" y="548.5" text-anchor="middle" fill="#1b3535" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="700" letter-spacing="0">Reuse saved</text>
+<text x="801.5" y="567.5" text-anchor="middle" fill="#1b3535" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="400" letter-spacing="0">results</text>
+<rect x="324" y="612" width="335" height="4" rx="1" fill="#254d48" stroke="#254d48" stroke-width="1.4"/>
+<path d="M491 646 l12 10 -12 10 -12 -10 z" fill="#fff4d7" stroke="#86682c" stroke-width="1.55"/>
+<rect x="318" y="703" width="346" height="66" rx="12" fill="#e5f2ea" stroke="#7e9991" stroke-width="1.4"/>
+<text x="491.0" y="731.5" text-anchor="middle" fill="#1b3535" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" letter-spacing="0">Apply both follow-up rules</text>
+<text x="491.0" y="750.5" text-anchor="middle" fill="#1b3535" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" letter-spacing="0">Keep or withhold the question.</text>
+<rect x="35" y="703" width="186" height="66" rx="12" fill="#eaf0f4" stroke="#7e9991" stroke-width="1.4"/>
+<text x="128.0" y="731.5" text-anchor="middle" fill="#1b3535" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" letter-spacing="0">Cache if needed, log,</text>
+<text x="128.0" y="750.5" text-anchor="middle" fill="#1b3535" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="400" letter-spacing="0">and return decision</text>
+<circle cx="128" cy="814" r="9" fill="#faf9f4" stroke="#213f3b" stroke-width="1.8"/>
+<circle cx="128" cy="814" r="5.4" fill="#213f3b"/>
+<path d="M128 170 V189" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round"/>
+<path d="M124.2 182.0 L128.0 189.0 L131.8 182.0" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M128 243 V266" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round"/>
+<path d="M124.2 259.0 L128.0 266.0 L131.8 259.0" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M128 320 V343" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round"/>
+<path d="M124.2 336.0 L128.0 343.0 L131.8 336.0" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M221 374 H313" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round"/>
+<path d="M306.0 377.8 L313.0 374.0 L306.0 370.2" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M491 405 V430" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round"/>
+<path d="M487.2 423.0 L491.0 430.0 L494.8 423.0" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M491 450 V488" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round"/>
+<path d="M487.2 481.0 L491.0 488.0 L494.8 481.0" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="501" y="477" text-anchor="start" fill="#735019" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" letter-spacing="0">[cache miss]</text>
+<path d="M503 440 H801 V520" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round"/>
+<path d="M797.2 513.0 L801.0 520.0 L804.8 513.0" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="529" y="431" text-anchor="start" fill="#735019" font-family="Arial, Helvetica, sans-serif" font-size="14" font-weight="700" letter-spacing="0">[cache hit]</text>
+<path d="M324 492 V520" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round"/>
+<path d="M320.2 513.0 L324.0 520.0 L327.8 513.0" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M491 492 V520" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round"/>
+<path d="M487.2 513.0 L491.0 520.0 L494.8 513.0" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M659 492 V520" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round"/>
+<path d="M655.2 513.0 L659.0 520.0 L662.8 513.0" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M324 586 V612" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round"/>
+<path d="M320.2 605.0 L324.0 612.0 L327.8 605.0" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M491 586 V612" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round"/>
+<path d="M487.2 605.0 L491.0 612.0 L494.8 605.0" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M659 586 V612" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round"/>
+<path d="M655.2 605.0 L659.0 612.0 L662.8 605.0" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M491 616 V646" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round"/>
+<path d="M487.2 639.0 L491.0 646.0 L494.8 639.0" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M801 586 V656 H503" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round"/>
+<path d="M510.0 652.2 L503.0 656.0 L510.0 659.8" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M491 666 V703" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round"/>
+<path d="M487.2 696.0 L491.0 703.0 L494.8 696.0" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M318 736 H221" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round"/>
+<path d="M228.0 732.2 L221.0 736.0 L228.0 739.8" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M128 769 V805" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round"/>
+<path d="M124.2 798.0 L128.0 805.0 L131.8 798.0" fill="none" stroke="#355655" stroke-width="1.65" stroke-linejoin="round" stroke-linecap="round"/>
+</svg>

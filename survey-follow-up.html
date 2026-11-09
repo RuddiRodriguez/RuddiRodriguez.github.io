@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Survey Follow-up Engine · Ruddi Rodriguez Garcia</title>
+<meta name="description" content="How a survey API and prediction library decide when to ask one more question. An activity diagram traces cached and fresh predictions.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=12"><link rel="stylesheet" href="assets/uml/diagrams.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="wrap"><a class="brand" href="index.html">RG<span>Ruddi Rodriguez Garcia</span></a><nav aria-label="Main navigation"><a href="index.html#entries">Projects</a><a href="https://github.com/RuddiRodriguez">GitHub ↗</a></nav></header>
+<main id="main"><div class="wrap page-back"><a href="index.html#entries">← All project entries</a></div>
+<article class="wrap blog-article">
+<div class="article-header"><p class="eyebrow">LANGUAGE MODELS / SURVEY RESEARCH</p><h1>Survey Follow-up Engine</h1>
+<p class="article-lead">When someone gives a short survey answer, asking for more detail can help. It can also be the wrong moment to probe. This service makes two separate choices: what it could ask, and whether it should ask at all.</p><p class="article-byline">By Ruddi Rodriguez Garcia</p></div>
+<div class="article-layout"><nav class="article-toc" aria-label="In this article"><span>IN THIS ARTICLE</span><a href="#activity-diagram">From API to library</a><a href="#decision">How the decision works</a><a href="#response">What comes back</a></nav>
+<div class="article-body">
+<section id="activity-diagram" class="article-section"><h2>From API to library</h2>
+<p>The survey API receives the original question and the respondent’s answer. It checks whether the request can use this service, looks up a saved prediction, and gathers the available descriptions or transcripts if media was supplied. It then passes the prepared input to the follow-up library.</p>
+<figure class="uml-diagram">
+<div class="uml-view" tabindex="0" role="region" aria-label="Scrollable activity diagram"><img src="assets/uml/survey-follow-up.svg" alt="Two activity lanes show the survey API passing a request to the library. A saved result skips three parallel tasks. Both paths apply the same rules and return a decision to the API." width="890" height="877"></div>
+<figcaption>Left: the API handles the request and response. Right: the library assesses the answer. The two dark bars mark where parallel work starts and where all three results must be ready. <a href="assets/uml/survey-follow-up.svg">Open full-size diagram ↗</a></figcaption>
+</figure>
+<p>This <a href="https://www.omg.org/spec/UML/2.5.1/">UML activity diagram</a> traces eligible requests. An unsupported survey language or region, a request assigned to the older version, or a reported media error can return from the API before the library is called.</p></section>
+<section id="decision" class="article-section"><h2>Drafting a question and deciding to ask it are separate steps</h2>
+<p>Without a saved prediction, the library starts three tasks together: assess whether the answer gives enough detail, assess how sensitive the topic is, and draft a possible follow-up. It waits for all three. Drafting the question in parallel means the generator does not need to wait for the two assessments.</p>
+<p>A question is selected only when <em>both</em> assessments permit it under the request’s settings. If either blocks it, the library withholds the text. With a saved prediction, it skips those three tasks and applies the same rule to the saved assessments and candidate question.</p></section>
+<section id="response" class="article-section"><h2>What the survey receives</h2>
+<p>The API saves a new prediction when the library marks it for reuse, records the result, and returns three fields: whether to ask, the question text if selected, and an error message if something went wrong. One request can return at most one follow-up question.</p>
+</section></div></div></article></main>
+<footer class="wrap"><span>Ruddi Rodriguez Garcia · Project portfolio</span><a href="#">Back to top ↑</a></footer>
+</body></html>
