@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Source-verified company contact enrichment · Ruddi Rodriguez Garcia</title>
+<meta name="description" content="A staged workflow for researching Romanian company contact details while keeping every source, uncertainty, and workbook change traceable.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=12"></head>
+<body><a class="skip" href="#main">Skip to content</a>
+<header class="wrap"><a class="brand" href="index.html">RG<span>Ruddi Rodriguez Garcia</span></a><nav aria-label="Main navigation"><a href="index.html#project-index">All projects</a><a href="https://github.com/RuddiRodriguez">GitHub ↗</a></nav></header>
+<main id="main"><article class="wrap blog-article">
+<div class="article-header"><p class="eyebrow">WEB RESEARCH / DATA QUALITY / EXCEL</p>
+<h1>Source-verified company contact enrichment</h1><p class="article-lead">A large company workbook had missing contact details. I built a staged research process that preserved the workbook, recorded the evidence behind each update, and left uncertain fields blank.</p></div>
+<div class="article-body">
+<section class="article-section"><h2>The problem</h2>
+<p>The source contained Romanian company records spread across a master sheet and sector sheets. The task was not simply to find plausible email addresses. Each address needed a public source, the company identity had to match, and older evidence could not be presented as current.</p>
+<p>The client stopped responding before the whole database was researched. I therefore froze the latest verified checkpoint instead of presenting partial work as a completed database.</p></section>
+<section class="article-section"><h2>The research method</h2>
+<div class="article-table"><table aria-label="Company contact research workflow"><thead><tr><th scope="col">Stage</th><th scope="col">What I checked</th><th scope="col">Rule</th></tr></thead><tbody>
+<tr><td>Identify</td><td>Company name, phone, website, and public business references</td><td>The evidence had to belong to the same company.</td></tr>
+<tr><td>Verify</td><td>Official pages first, then clearly labelled public directories or older records</td><td>Masked, guessed, and inferred emails were rejected.</td></tr>
+<tr><td>Record</td><td>Email, source URL, evidence date, and verification note</td><td>Historical evidence stayed labelled historical.</td></tr>
+<tr><td>Checkpoint</td><td>Twenty rows at a time, with a separate workbook and validation report</td><td>No batch was accepted until workbook checks passed.</td></tr>
+</tbody></table></div></section>
+<section class="article-section"><h2>The paused checkpoint</h2>
+<div class="result-stats"><div><strong>960</strong><span>company rows reviewed</span><small>48 batches of 20</small></div><div><strong>19,042</strong><span>email fields still blank</span><small>not guessed or filled artificially</small></div><div><strong>0</strong><span>unexpected workbook changes</span><small>in the final validation</small></div></div>
+<p>The final batch added eight publicly sourced addresses. Three came only from older public sources and were labelled historical. The final workbook passed checks for file integrity, sheet structure, styles, formulas, and consistency between the master and sector sheets.</p>
+<p>This page describes the method and verified progress. The raw company workbook is not published because it contains collected contact data, and the project remains partial.</p></section>
+</div></article></main><footer class="wrap"><span>Ruddi Rodriguez Garcia · Project portfolio</span><a href="index.html#entries">All projects</a></footer></body></html>
