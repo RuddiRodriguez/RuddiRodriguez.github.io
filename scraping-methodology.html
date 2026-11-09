@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reusable scraping and verification workflow · Ruddi Rodriguez Garcia</title>
+<meta name="description" content="A practical scraping method that keeps source evidence, rejects uncertain values, saves restartable checkpoints, and adapts to different research projects.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=13"></head>
+<body><a class="skip" href="#main">Skip to content</a>
+<header class="wrap"><a class="brand" href="index.html">RG<span>Ruddi Rodriguez Garcia</span></a><nav aria-label="Main navigation"><a href="index.html#project-index">All projects</a><a href="https://github.com/RuddiRodriguez">GitHub ↗</a></nav></header>
+<main id="main"><article class="wrap blog-article">
+<div class="article-header"><p class="eyebrow">WEB SCRAPING / PUBLIC-SOURCE RESEARCH / DATA QUALITY</p>
+<h1>A reusable scraping and verification workflow</h1>
+<p class="article-lead">Different websites need different collectors. The quality rules can stay the same: define the required evidence, keep every source, reject uncertain values, and save work in small restartable batches.</p></div>
+<div class="article-body">
+<section class="article-section"><h2>One method, different projects</h2>
+<p>A retail page, an investment firm website, and a company directory have different layouts and risks. The shared problem is deciding whether a collected value belongs in the final row. My workflow separates collection from verification so a plausible value does not become accepted data without supporting evidence.</p>
+<div class="flow full-flow" aria-label="Six stages in the reusable scraping workflow">
+<div><span>01</span><h3>Define</h3><p>Set the fields, allowed sources, rejection rules, and meaning of a blank value.</p></div>
+<div><span>02</span><h3>Collect</h3><p>Keep the value, page URL, collection time, and identifiers needed to match the record.</p></div>
+<div><span>03</span><h3>Match</h3><p>Confirm the product, company, person, location, or store before accepting the value.</p></div>
+<div><span>04</span><h3>Classify</h3><p>Mark evidence as current, historical, unresolved, unavailable, or rejected.</p></div>
+<div><span>05</span><h3>Check</h3><p>Review exceptions, duplicates, missing sources, and changes outside the intended rows.</p></div>
+<div><span>06</span><h3>Checkpoint</h3><p>Save small batches with a validation report so work can stop and resume safely.</p></div>
+</div></section>
+<section class="article-section"><h2>The evidence rule</h2>
+<div class="article-table"><table aria-label="Evidence levels used by the workflow"><thead><tr><th scope="col">Evidence</th><th scope="col">Treatment</th><th scope="col">Example</th></tr></thead><tbody>
+<tr><td>Current and directly matched</td><td>Accept with its source</td><td>An official page names the person and publishes the address.</td></tr>
+<tr><td>Current but indirect</td><td>Keep for review, not as confirmed</td><td>A registry phone matches, but the email appears only on another public profile.</td></tr>
+<tr><td>Historical</td><td>Keep only with a historical label</td><td>An older company document contains an address that is no longer shown.</td></tr>
+<tr><td>Masked, guessed, or unmatched</td><td>Reject or leave blank</td><td>A naming pattern suggests an email, but no source publishes it.</td></tr>
+</tbody></table></div>
+<p>A blank field means “not supported by the required evidence.” It does not mean zero, false, or that the value does not exist.</p></section>
+<section class="article-section"><h2>How the method changed across three projects</h2>
+<div class="article-table"><table aria-label="Use of the scraping method across portfolio projects"><thead><tr><th scope="col">Project</th><th scope="col">Main risk</th><th scope="col">Verification used</th></tr></thead><tbody>
+<tr><td><a href="walmart-scraper.html">Walmart catalog scraper</a></td><td>A valid price could belong to the wrong store or fulfilment option.</td><td>Store and pickup evidence were checked before a price was saved.</td></tr>
+<tr><td><a href="investment-contact-research.html">Investment contact research</a></td><td>A current employee and a plausible email could still be the wrong combination.</td><td>Role, email, and profile evidence were recorded separately; inferred addresses stayed blank.</td></tr>
+<tr><td><a href="romanian-company-enrichment.html">Romanian company enrichment</a></td><td>Large-scale edits could mix companies, hide uncertainty, or damage a multi-sheet workbook.</td><td>Research ran in 20-row batches with source notes and workbook checks. Work paused after 960 reviewed rows when the client stopped responding.</td></tr>
+</tbody></table></div></section>
+<section class="article-section"><h2>What makes the workflow reusable</h2>
+<ul>
+<li>The requested fields and evidence rules are configuration, not assumptions hidden in the collector.</li>
+<li>Every accepted value keeps enough context to trace it back to a public page.</li>
+<li>Rejected and unresolved records remain visible instead of disappearing from the result.</li>
+<li>Small checkpoints limit rework and provide a clear restart point.</li>
+<li>Validation checks the output shape, duplicate records, required sources, and unintended file changes.</li>
+</ul>
+<p>The collector still needs to be adapted when a website changes, blocks access, requires a browser, or exposes data through a different route. Reuse comes from the control process and shared output rules, not from pretending one scraper works everywhere.</p></section>
+<section class="article-section"><h2>Project status stays part of the data</h2>
+<p>A stopped run is not a completed dataset. The Romanian company project has a frozen, validated checkpoint with 960 reviewed rows and 19,042 blank email fields. Its next record is known, so the work can resume without presenting the partial database as complete.</p>
+<p><a href="romanian-company-enrichment.html">Read the paused checkpoint →</a> · <a href="walmart-scraper.html">See the retail example →</a> · <a href="investment-contact-research.html">See the contact research example →</a></p>
+</section>
+</div></article></main><footer class="wrap"><span>Ruddi Rodriguez Garcia · Project portfolio</span><a href="index.html#entries">All projects</a></footer></body></html>
