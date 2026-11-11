@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PDF to editable Word pipeline · Ruddi Rodriguez Garcia</title>
+<meta name="description" content="A reusable PDF and scanned-document to Word pipeline: cheap methods first, an automatic quality check on every page, AI only where needed, and manual review only for flagged pages.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css?v=13"></head>
+<body><a class="skip" href="#main">Skip to content</a>
+<header class="wrap"><a class="brand" href="index.html">RG<span>Ruddi Rodriguez Garcia</span></a><nav aria-label="Main navigation"><a href="index.html#project-index">All projects</a><a href="https://github.com/RuddiRodriguez">GitHub ↗</a></nav></header>
+<main id="main"><article class="wrap blog-article">
+<div class="article-header"><p class="eyebrow">DOCUMENT CONVERSION / PYTHON / AI VISION / QUALITY CHECKS</p>
+<h1>A PDF to Word pipeline that checks its own work</h1>
+<p class="article-lead">No single converter handles every PDF well. This pipeline tries the cheapest reliable method first, scores every page against the source, sends only failing pages to an AI vision model, and flags the rest for a person. Each client's style lives in a profile file, so the code stays the same between projects.</p></div>
+<div class="article-body">
+
+<section class="article-section"><h2>The problem with one converter</h2>
+<p>A direct converter can make a page <em>look</em> right while the Word file is hard to edit. On the sample report, the pdf2docx library rebuilt the page layout as 9 Word tables when the source has 1. An AI model reads difficult pages well but costs money per page and can drop or change text. OCR reads printed scans but not handwriting. Each method fails in a different place, so the method is chosen page by page, after measuring the result.</p>
+<div class="flow full-flow" aria-label="Six stages in the PDF to Word pipeline">
+<div><span>01</span><h3>Prepare</h3><p>Turn a PDF or a folder of photos into one PDF. A file with no text layer is a scan, so OCR adds one.</p></div>
+<div><span>02</span><h3>Convert</h3><p>Try methods in order of cost: whole-file converter, rules-based extraction, then the AI vision model.</p></div>
+<div><span>03</span><h3>Score</h3><p>Compare each page with the source text: word order, missing or added text, tables and changed numbers.</p></div>
+<div><span>04</span><h3>Fall back</h3><p>Only pages that fail move to the next method. Pages that never pass keep their best attempt and are flagged.</p></div>
+<div><span>05</span><h3>Write</h3><p>Every page becomes editable Markdown with cropped figures, then Word in the client's style.</p></div>
+<div><span>06</span><h3>Review</h3><p>A person checks flagged pages side by side with the source. Edits rebuild the Word file with no new AI cost.</p></div>
+</div></section>
+
+<section class="article-section"><h2>Methods, in order of cost</h2>
+<div class="article-table"><table aria-label="Conversion methods used by the pipeline"><thead><tr><th scope="col">Method</th><th scope="col">Used for</th><th scope="col">Cost</th></tr></thead><tbody>
+<tr><td>pdf2docx</td><td>The whole document, digital PDFs only. Accepted when the full file passes the check.</td><td>Free, local</td></tr>
+<tr><td>Rules-based extraction (PyMuPDF)</td><td>Each page: text by font size, detected tables as real tables, embedded images and vector charts cropped.</td><td>Free, local</td></tr>
+<tr><td>AI vision model</td><td>Pages that still fail, and every page of a scan or photo. It reads the page image and returns Markdown with figure positions.</td><td>Paid per page, cached</td></tr>
+<tr><td>OCR (OCRmyPDF)</td><td>Scans only. Its text is not used as the result; it is the independent check for the AI transcription.</td><td>Free, local</td></tr>
+</tbody></table></div></section>
+
+<section class="article-section"><h2>Code example: the page cascade</h2>
+<p>Each method runs only on the pages still pending. A page leaves the loop as soon as one method passes, so a 40-page report with three difficult pages sends three pages to the paid model, not forty.</p>
+<figure class="code-example"><figcaption><strong>Per-page fallback</strong><span>Python · from pipeline.py</span></figcaption><pre><code>def page_cascade(pdf, pngs, run_dir, profile, order):
+    refs = [page_reference(p) for p in pdf]
+    attempts = {i: [] for i in range(len(pdf))}
+    pending = list(range(len(pdf)))
+    for name in order:
+        contexts = [{"page": pdf[i], "png": pngs[i], "run_dir": run_dir, "profile": profile}
+                    for i in pending]
+        for i, result in zip(pending, run_strategy(name, contexts, profile)):
+            attempts[i].append({"strategy": name, **result,
+                                "scores": page_score(refs[i], result)})
+        pending = [i for i in pending
+                   if not passes(attempts[i][-1]["scores"], profile)]
+    return [best_attempt(i, attempts[i], profile) for i in range(len(pdf))]</code></pre></figure>
+</section>
+
+<section class="article-section"><h2>The quality gate</h2>
+<p>A page that looks right in Word can still be an image, miss a paragraph, or change a number in a table. The gate measures those separately, from 0 to 1, against the text inside the PDF.</p>
+<div class="article-table"><table aria-label="Checks used by the quality gate"><thead><tr><th scope="col">Check</th><th scope="col">Question</th></tr></thead><tbody>
+<tr><td>Text</td><td>Are the same words there, in the same order?</td></tr>
+<tr><td>Editable</td><td>Is the amount of real text about the same, so nothing was lost inside an image or invented?</td></tr>
+<tr><td>Tables</td><td>Did tables survive as real Word tables?</td></tr>
+<tr><td>Numbers</td><td>Is any number missing or new? Any difference flags the page, whatever the score.</td></tr>
+</tbody></table></div>
+<figure class="code-example"><figcaption><strong>Scoring one page</strong><span>Python · from score.py</span></figcaption><pre><code>def page_score(ref, attempt):
+    # Text inside figures stays an image in Word, so it is left out of the comparison too.
+    reference = " ".join(w[4] for w in ref["words"] if outside(w, attempt["figures"]))
+    md = IMAGE_LINE.sub("", attempt["markdown"])
+    return {
+        **scores(words(reference), ref["tables"], words(md), len(TABLE_SEPARATOR.findall(md))),
+        "numbers": number_flags(reference, md),
+    }</code></pre></figure>
+</section>
+
+<section class="article-section"><h2>Scans: two independent readers</h2>
+<p>A scan has no true text to compare against. My first version scored rules-based extraction against the OCR text it had just read, so every scanned page passed with a perfect score. That check proved nothing. Now the AI model transcribes from the image alone, and the OCR text is used only to check it. When the two readers agree, the page passes. When they disagree, a person checks the page. If the AI step is switched off for confidential work, every scanned page is flagged.</p>
+<figure class="code-example"><figcaption><strong>The rule that removed the false pass</strong><span>Python · from pipeline.py</span></figcaption><pre><code># On a scan, pymupdf reads the OCR layer it is scored against (always 1.0).
+# So the vision model transcribes and the OCR layer only checks it.
+order = ["vlm"] if scanned and "vlm" in order else order
+pages = page_cascade(pdf, pngs, run_dir, profile, order)
+pages = [p | {"needs_review": True} if scanned and p["strategy"] == "pymupdf" else p
+         for p in pages]</code></pre></figure>
+<p>Charts caused the next false alarm. OCR read chart lines as stray characters while the AI model described the chart labels, so the two readers disagreed on chart pages even when the body text was right. The model now marks each figure's position, the figure is cropped into Word as an image, and text inside it is left out of the check. On the scanned test, the two chart pages went from 0.64 and 0.55 to 1.00 agreement.</p>
+</section>
+
+<section class="article-section"><h2>One pipeline, many clients</h2>
+<p>What changes between clients is a small JSON profile, not the code: font, spacing, page size, OCR language, lines to remove such as running headers, the pass threshold, and which methods may run.</p>
+<figure class="code-example"><figcaption><strong>A client profile</strong><span>JSON · overrides the defaults</span></figcaption><pre><code>{
+  "vlm_model": "gpt-6-luna",
+  "ocr_language": "eng+spa",
+  "drop_lines": ["\\d{1,4}", "ACME CORP — CONFIDENTIAL", "Annual Report \\d{4}"],
+  "font": "Times New Roman",
+  "font_size": 12,
+  "line_spacing": 2,
+  "justify": true
+}</code></pre></figure>
+<p>Every page is saved as Markdown before Word is written. A reviewer fixes a page in a text file and runs one rebuild command. Their edits are never overwritten, and AI answers are cached by image, model and prompt, so reruns do not pay twice.</p>
+</section>
+
+<section class="article-section"><h2>Result on a 4-page report</h2>
+<p>A digital report with tables, code blocks and charts, converted with no manual correction.</p>
+<div class="article-table"><table aria-label="Method and score per page for the sample report"><thead><tr><th scope="col">Page</th><th scope="col">Method that passed</th><th scope="col">Score</th></tr></thead><tbody>
+<tr><td>Whole file</td><td>pdf2docx tried first, rejected</td><td>0.57</td></tr>
+<tr><td>1</td><td>AI vision model (rules-based extraction scored 0.86)</td><td>0.99</td></tr>
+<tr><td>2</td><td>Rules-based extraction</td><td>0.98</td></tr>
+<tr><td>3</td><td>Rules-based extraction</td><td>0.96</td></tr>
+<tr><td>4</td><td>Rules-based extraction</td><td>0.98</td></tr>
+</tbody></table></div>
+<p>One page of four used the paid model and no page was flagged. <a href="https://github.com/RuddiRodriguez/scanned-document-digitization-samples/tree/main/pdf_to_word_pipeline_sample">See the original PDF, the Word result and the page-by-page review files ↗</a></p>
+</section>
+
+<section class="article-section"><h2>What this does not establish</h2>
+<ul>
+<li>The scores compare the result with the PDF's own text. On scans they measure agreement between two readers, not accuracy against a corrected transcript.</li>
+<li>Handwriting still needs a person. OCR cannot read it, so there is no second reader, and the AI model misread words and one number in my handwritten test.</li>
+<li>Text inside charts stays part of the chart image. Equations and complex layouts are not rebuilt.</li>
+<li>The pipeline was tested on a small set of documents. Thresholds should be checked on a client's own sample pages before a large job.</li>
+</ul>
+<p>For a large manual reviewed by hand after AI-assisted transcription, see <a href="scanned-tables-excel.html">from scanned pages to usable tables →</a></p>
+</section>
+</div></article></main><footer class="wrap"><span>Ruddi Rodriguez Garcia · Project portfolio</span><a href="index.html#entries">All projects</a></footer></body></html>
